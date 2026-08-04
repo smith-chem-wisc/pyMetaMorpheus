@@ -83,6 +83,31 @@ def patch_toml(
     return applied
 
 
+def read_sections(path: Path) -> dict[str | None, dict[str, str]]:
+    """Parse a TOML into ``{section: {key: raw_value_string}}`` for discovery.
+
+    Read-only and deliberately shallow — it mirrors the same single-line
+    ``key = value`` model :func:`patch_toml` edits (so what it reports is exactly
+    what ``params`` can override). ``section`` is the exact bracket header, or
+    ``None`` for keys before the first section. Values are the raw TOML text
+    (right of ``=``, trimmed), not parsed into Python types.
+    """
+    sections: dict[str | None, dict[str, str]] = {}
+    current: str | None = None
+    with open(path, "r", encoding="utf-8", newline="") as fh:
+        for line in fh:
+            stripped = line.strip()
+            if stripped.startswith("[") and stripped.endswith("]"):
+                current = stripped[1:-1].strip()
+                sections.setdefault(current, {})
+                continue
+            if not stripped or stripped.startswith("#") or "=" not in line:
+                continue
+            key, _, value = line.partition("=")
+            sections.setdefault(current, {})[key.strip()] = value.strip()
+    return sections
+
+
 def format_mods(mods: list[str]) -> str:
     """Turn ``["Common Variable|Oxidation on M", ...]`` into MetaMorpheus's
     tab-delimited ``ListOfMods*`` string.

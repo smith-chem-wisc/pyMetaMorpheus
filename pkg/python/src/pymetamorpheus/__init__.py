@@ -47,6 +47,7 @@ from ._errors import (
 )
 from .api import (
     Task,
+    available_parameters,
     calibrate,
     glyco_search,
     gptmd,
@@ -54,8 +55,12 @@ from .api import (
     make_glyco_search_task,
     make_gptmd_task,
     make_search_task,
+    make_xl_search_task,
     pipeline,
+    run_toml,
     search,
+    task_from_toml,
+    xl_search,
 )
 from .results import RunResult, TaskResult
 
@@ -68,13 +73,19 @@ __all__ = [
     "calibrate",
     "gptmd",
     "glyco_search",
+    "xl_search",
     "pipeline",
+    "run_toml",
+    # introspection
+    "available_parameters",
     # task builders
     "Task",
     "make_search_task",
     "make_calibration_task",
     "make_gptmd_task",
     "make_glyco_search_task",
+    "make_xl_search_task",
+    "task_from_toml",
     # results
     "RunResult",
     "TaskResult",

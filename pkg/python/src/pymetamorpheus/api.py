@@ -12,7 +12,18 @@ from ``CMD -g``. Widen only on demand (gap G-tasks / G-demand), never speculativ
 
 from __future__ import annotations
 
-from ._engine import Task, common_overrides, run_tasks
+import tempfile
+from pathlib import Path
+
+from ._engine import (
+    Task,
+    common_overrides,
+    normalize_params,
+    run_tasks,
+)
+from ._errors import UsageError
+from ._runner import generate_default_tomls
+from ._toml import read_sections
 from .results import RunResult
 
 __all__ = [
@@ -20,12 +31,17 @@ __all__ = [
     "calibrate",
     "gptmd",
     "glyco_search",
+    "xl_search",
     "pipeline",
+    "run_toml",
+    "available_parameters",
     "Task",
     "make_search_task",
     "make_calibration_task",
     "make_gptmd_task",
     "make_glyco_search_task",
+    "make_xl_search_task",
+    "task_from_toml",
 ]
 
 
@@ -51,6 +67,7 @@ def make_search_task(
     quantify_ppm_tol: float | None = None,
     write_spectral_library: bool | None = None,
     update_spectral_library: bool | None = None,
+    params: dict | None = None,
 ) -> Task:
     """A classic ``SearchTask`` with the common parameters overridden.
 
@@ -85,6 +102,7 @@ def make_search_task(
         overrides[(sp, "WriteSpectralLibrary")] = bool(write_spectral_library)
     if update_spectral_library is not None:
         overrides[(sp, "UpdateSpectralLibrary")] = bool(update_spectral_library)
+    overrides.update(normalize_params(params))  # arbitrary passthrough wins
     return Task(task_type="Search", overrides=overrides)
 
 
@@ -94,17 +112,17 @@ def make_calibration_task(
     product_tol_ppm: float | None = None,
     protease: str | None = None,
     max_threads: int | None = None,
+    params: dict | None = None,
 ) -> Task:
     """A ``CalibrationTask`` (produces calibrated ``*-calib.mzML``)."""
-    return Task(
-        task_type="Calibration",
-        overrides=common_overrides(
-            precursor_tol_ppm=precursor_tol_ppm,
-            product_tol_ppm=product_tol_ppm,
-            protease=protease,
-            max_threads=max_threads,
-        ),
+    overrides = common_overrides(
+        precursor_tol_ppm=precursor_tol_ppm,
+        product_tol_ppm=product_tol_ppm,
+        protease=protease,
+        max_threads=max_threads,
     )
+    overrides.update(normalize_params(params))
+    return Task(task_type="Calibration", overrides=overrides)
 
 
 def make_gptmd_task(
@@ -113,17 +131,17 @@ def make_gptmd_task(
     product_tol_ppm: float | None = None,
     protease: str | None = None,
     max_threads: int | None = None,
+    params: dict | None = None,
 ) -> Task:
     """A ``GptmdTask`` (produces a PTM-augmented ``*GPTMD.xml`` database)."""
-    return Task(
-        task_type="Gptmd",
-        overrides=common_overrides(
-            precursor_tol_ppm=precursor_tol_ppm,
-            product_tol_ppm=product_tol_ppm,
-            protease=protease,
-            max_threads=max_threads,
-        ),
+    overrides = common_overrides(
+        precursor_tol_ppm=precursor_tol_ppm,
+        product_tol_ppm=product_tol_ppm,
+        protease=protease,
+        max_threads=max_threads,
     )
+    overrides.update(normalize_params(params))
+    return Task(task_type="Gptmd", overrides=overrides)
 
 
 def make_glyco_search_task(
@@ -133,6 +151,7 @@ def make_glyco_search_task(
     product_tol_ppm: float | None = None,
     protease: str | None = None,
     max_threads: int | None = None,
+    params: dict | None = None,
 ) -> Task:
     """A ``GlycoSearchTask``.
 
@@ -149,7 +168,42 @@ def make_glyco_search_task(
     )
     if glyco_search_type is not None:
         overrides[("_glycoSearchParameters", "GlycoSearchType")] = glyco_search_type
+    overrides.update(normalize_params(params))
     return Task(task_type="GlycoSearch", overrides=overrides)
+
+
+def make_xl_search_task(
+    *,
+    precursor_tol_ppm: float | None = None,
+    product_tol_ppm: float | None = None,
+    protease: str | None = None,
+    max_threads: int | None = None,
+    params: dict | None = None,
+) -> Task:
+    """An ``XLSearchTask`` — cross-link (XL) search.
+
+    Cross-linker-specific settings (e.g. the crosslinker name/masses) live in the
+    task's own TOML section; set them via ``params`` or ``available_parameters``.
+    """
+    overrides = common_overrides(
+        precursor_tol_ppm=precursor_tol_ppm,
+        product_tol_ppm=product_tol_ppm,
+        protease=protease,
+        max_threads=max_threads,
+    )
+    overrides.update(normalize_params(params))
+    return Task(task_type="XLSearch", overrides=overrides)
+
+
+def task_from_toml(toml_path) -> Task:
+    """A bring-your-own-TOML task: run this complete task config verbatim.
+
+    The full-fidelity escape hatch — hand it a ``.toml`` you authored or edited
+    (e.g. from :func:`available_parameters` or a MetaMorpheus GUI export) and it
+    runs exactly as the CLI would, with no generation or patching. Compose with
+    :func:`pipeline`, or run directly with :func:`run_toml`.
+    """
+    return Task(toml_path=Path(toml_path))
 
 
 # --------------------------------------------------------------------------- #
@@ -176,6 +230,7 @@ def search(
     quantify_ppm_tol: float | None = None,
     write_spectral_library: bool | None = None,
     update_spectral_library: bool | None = None,
+    params: dict | None = None,
     timeout: float | None = None,
 ) -> RunResult:
     """Run a classic MetaMorpheus search.
@@ -192,6 +247,11 @@ def search(
 
     Pass ``write_spectral_library=True`` to also generate a ``.msp`` spectral
     library from the confirmed IDs — find it at ``result.search.spectral_library``.
+
+    Any setting not covered by a named argument can be reached through ``params``,
+    a ``{section: {key: value}}`` dict applied on top of the generated default —
+    see :func:`available_parameters` for the full set. For settings the
+    line-patcher can't express, hand a complete config to :func:`run_toml`.
     """
     task = make_search_task(
         precursor_tol_ppm=precursor_tol_ppm,
@@ -209,6 +269,7 @@ def search(
         quantify_ppm_tol=quantify_ppm_tol,
         write_spectral_library=write_spectral_library,
         update_spectral_library=update_spectral_library,
+        params=params,
     )
     return run_tasks(
         [task], spectra=spectra, database=database, output_dir=output_dir, timeout=timeout
@@ -224,6 +285,7 @@ def calibrate(
     product_tol_ppm: float | None = None,
     protease: str | None = None,
     max_threads: int | None = None,
+    params: dict | None = None,
     timeout: float | None = None,
 ) -> RunResult:
     """Run a calibration task, producing calibrated ``*-calib.mzML`` spectra
@@ -233,6 +295,7 @@ def calibrate(
         product_tol_ppm=product_tol_ppm,
         protease=protease,
         max_threads=max_threads,
+        params=params,
     )
     return run_tasks(
         [task], spectra=spectra, database=database, output_dir=output_dir, timeout=timeout
@@ -248,6 +311,7 @@ def gptmd(
     product_tol_ppm: float | None = None,
     protease: str | None = None,
     max_threads: int | None = None,
+    params: dict | None = None,
     timeout: float | None = None,
 ) -> RunResult:
     """Run a GPTMD task, producing a PTM-augmented protein database
@@ -257,6 +321,7 @@ def gptmd(
         product_tol_ppm=product_tol_ppm,
         protease=protease,
         max_threads=max_threads,
+        params=params,
     )
     return run_tasks(
         [task], spectra=spectra, database=database, output_dir=output_dir, timeout=timeout
@@ -273,6 +338,7 @@ def glyco_search(
     product_tol_ppm: float | None = None,
     protease: str | None = None,
     max_threads: int | None = None,
+    params: dict | None = None,
     timeout: float | None = None,
 ) -> RunResult:
     """Run a glyco search (``result.glyco_search``)."""
@@ -282,10 +348,88 @@ def glyco_search(
         product_tol_ppm=product_tol_ppm,
         protease=protease,
         max_threads=max_threads,
+        params=params,
     )
     return run_tasks(
         [task], spectra=spectra, database=database, output_dir=output_dir, timeout=timeout
     )
+
+
+def xl_search(
+    spectra,
+    database,
+    output_dir,
+    *,
+    precursor_tol_ppm: float | None = None,
+    product_tol_ppm: float | None = None,
+    protease: str | None = None,
+    max_threads: int | None = None,
+    params: dict | None = None,
+    timeout: float | None = None,
+) -> RunResult:
+    """Run a cross-link (XL) search (``result.task("XLSearchTask")``).
+
+    Crosslinker-specific settings go through ``params`` — see
+    :func:`available_parameters` with ``"XLSearch"``.
+    """
+    task = make_xl_search_task(
+        precursor_tol_ppm=precursor_tol_ppm,
+        product_tol_ppm=product_tol_ppm,
+        protease=protease,
+        max_threads=max_threads,
+        params=params,
+    )
+    return run_tasks(
+        [task], spectra=spectra, database=database, output_dir=output_dir, timeout=timeout
+    )
+
+
+def run_toml(
+    toml,
+    spectra,
+    database,
+    output_dir,
+    *,
+    timeout: float | None = None,
+) -> RunResult:
+    """Run one or more complete, ready-made task TOMLs verbatim.
+
+    ``toml`` is a path (or an iterable of paths) to task ``.toml`` files — the
+    full-fidelity escape hatch for anything the named parameters and ``params``
+    passthrough can't express. Equivalent to ``pipeline([task_from_toml(t) ...])``.
+    """
+    tomls = [toml] if isinstance(toml, (str, Path)) else list(toml)
+    tasks = [task_from_toml(t) for t in tomls]
+    return run_tasks(
+        tasks, spectra=spectra, database=database, output_dir=output_dir, timeout=timeout
+    )
+
+
+def available_parameters(task_type: str = "Search") -> dict[str | None, dict[str, str]]:
+    """Return every parameter of a task type as ``{section: {key: default_value}}``.
+
+    Generates the task's default config with ``CMD -g`` and parses it, so what you
+    see is exactly what ``params`` can override (same single-line ``key = value``
+    model). ``task_type`` is one of ``"Search"``, ``"Calibration"``, ``"Gptmd"``,
+    ``"GlycoSearch"``, ``"XLSearch"``, ``"Averaging"``.
+
+    Example::
+
+        params = pymetamorpheus.available_parameters("Search")
+        params["SearchParameters"]["DoParsimony"]       # -> "true"
+        # then override any of them:
+        mm.search(..., params={"SearchParameters": {"DoParsimony": False}})
+    """
+    with tempfile.TemporaryDirectory(prefix="pymm_params_") as tmp:
+        defaults = generate_default_tomls(Path(tmp))
+        name = f"{task_type}Task.toml"
+        path = defaults.get(name)
+        if path is None:
+            raise UsageError(
+                f"No such task type {task_type!r}; MetaMorpheus generates: "
+                f"{sorted(p[:-len('Task.toml')] for p in defaults)}."
+            )
+        return read_sections(path)
 
 
 def pipeline(

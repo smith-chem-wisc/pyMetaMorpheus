@@ -26,6 +26,7 @@ nav:
   - Guides:
       - Classic search: guides/search.md
       - Calibration, GPTMD, glyco & pipelines: guides/tasks.md
+      - Full parameter access: guides/full-access.md
       - Results & output files: guides/results.md
       - Installation & locating the CLI: guides/installation.md
   - Changelog: changelog.md

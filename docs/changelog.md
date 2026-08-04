@@ -15,6 +15,14 @@ All notable changes to pyMetaMorpheus are recorded here. Format loosely follows
 - **Spectral library generation** — `search(..., write_spectral_library=True)` emits a `.msp`
   spectral library from the confirmed IDs (`update_spectral_library` to update an existing one);
   exposed as `result.search.spectral_library`.
+- **Full parameter access across every task** — three complementary levels so no setting is out of
+  reach: (1) named arguments for common knobs; (2) `params={section: {key: value}}` arbitrary
+  passthrough on every verb/builder, validated against the real schema (typos error loudly); (3)
+  `run_toml(...)` / `task_from_toml(...)` to run a complete hand-authored config verbatim. Plus
+  `available_parameters(task_type)` to introspect the full default config (Search ~112, Calibration
+  ~73, Gptmd ~69, GlycoSearch ~95, XLSearch ~87 settings).
+- **Cross-link search exposed** — `xl_search()` / `make_xl_search_task()` (`XLSearchTask`), completing
+  coverage of all five task types MetaMorpheus generates.
 
 ### Fixed
 - **CI/packaging**: `pkg/build/publish-runner.ps1` was being swallowed by a too-broad `build/`

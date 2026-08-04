@@ -45,18 +45,57 @@ class Task:
     filename (``<task_type>Task.toml``) and, indirectly, in the output folder
     (``TaskN<task_type>Task``). ``overrides`` maps ``(section, key) -> value`` in
     the exact shape :func:`pymetamorpheus._toml.patch_toml` expects.
+
+    If ``toml_path`` is set, this is a *bring-your-own-TOML* task: the file is used
+    verbatim (no ``CMD -g`` default, no patching), and ``task_type``/``overrides``
+    are ignored. That is the full-fidelity escape hatch for anything the
+    single-line patcher can't express.
     """
 
-    #: e.g. "Search", "Calibration", "Gptmd", "GlycoSearch".
-    task_type: str
+    #: e.g. "Search", "Calibration", "Gptmd", "GlycoSearch"; None for a BYO task.
+    task_type: str | None = None
     overrides: dict[tuple[str | None, str], object] = field(default_factory=dict)
+    #: A complete, ready-to-run task TOML supplied by the caller.
+    toml_path: Path | None = None
 
     @property
     def toml_filename(self) -> str:
         """The default-TOML basename MetaMorpheus emits for this task."""
         # `CMD -g` writes CalibrationTask.toml, GptmdTask.toml, SearchTask.toml,
-        # GlycoSearchTask.toml. task_type already carries the right stem.
+        # GlycoSearchTask.toml, AveragingTask.toml, XLSearchTask.toml. task_type
+        # already carries the right stem.
         return f"{self.task_type}Task.toml"
+
+
+def normalize_params(
+    params: dict | None,
+) -> dict[tuple[str | None, str], object]:
+    """Turn a user-facing ``params`` mapping into the internal ``(section, key)``
+    override dict.
+
+    Accepts the natural nested form, keyed by the exact TOML section header::
+
+        {"CommonParameters": {"MaxThreadsToUsePerFile": 8},
+         "CommonParameters.DigestionParams": {"MaxMissedCleavages": 3},
+         "SearchParameters": {"DoParsimony": False}}
+
+    Use the empty string ``""`` (or ``None``) as the section for a key that sits
+    above the first ``[section]`` (e.g. ``TaskType``). See
+    :func:`pymetamorpheus.available_parameters` to discover valid sections/keys.
+    """
+    if not params:
+        return {}
+    out: dict[tuple[str | None, str], object] = {}
+    for section, keys in params.items():
+        if not isinstance(keys, dict):
+            raise UsageError(
+                "params must be a nested dict {section: {key: value}}; got a "
+                f"non-dict value for section {section!r}."
+            )
+        sect = None if section in (None, "") else str(section)
+        for key, value in keys.items():
+            out[(sect, str(key))] = value
+    return out
 
 
 def common_overrides(
@@ -191,9 +230,24 @@ def run_tasks(
     # Stage the patched TOMLs in a scratch dir alongside the output.
     staging = Path(tempfile.mkdtemp(prefix="pymm_toml_", dir=out))
     try:
-        defaults = generate_default_tomls(staging)
+        # Only pay for `CMD -g` if at least one task needs a generated default;
+        # an all-bring-your-own-TOML run skips it entirely.
+        needs_defaults = any(t.toml_path is None for t in tasks)
+        defaults = generate_default_tomls(staging) if needs_defaults else {}
         task_toml_paths: list[Path] = []
         for i, task in enumerate(tasks, start=1):
+            if task.toml_path is not None:
+                # Bring-your-own-TOML: use it verbatim.
+                byo = Path(task.toml_path)
+                if not byo.exists():
+                    raise UsageError(f"TOML task config not found: {byo}")
+                if byo.suffix.lower() != ".toml":
+                    raise UsageError(f"Task config must be a .toml file: {byo}")
+                dest = staging / f"task{i}_{byo.name}"
+                shutil.copyfile(byo, dest)
+                task_toml_paths.append(dest)
+                continue
+
             src = defaults.get(task.toml_filename)
             if src is None:
                 raise UsageError(
@@ -208,8 +262,9 @@ def run_tasks(
                 if missing:
                     raise UsageError(
                         f"These parameters had no matching key in "
-                        f"{task.toml_filename} (MetaMorpheus schema may have "
-                        f"changed): {sorted(missing)}."
+                        f"{task.toml_filename} (unknown section/key, or the "
+                        f"MetaMorpheus schema changed): {sorted(missing)}. "
+                        "See available_parameters() for valid sections/keys."
                     )
             task_toml_paths.append(dest)
 
@@ -228,8 +283,11 @@ def run_tasks(
     # Fail loudly if MetaMorpheus exited 0 but produced no output folder for a
     # task we asked for (GUIDANCE §8: a "succeeded but produced nothing" run is a
     # failure, not a silent empty result). Each Task of type "Search" maps to a
-    # "SearchTask" folder, etc.
-    expected = Counter(f"{t.task_type}Task" for t in tasks)
+    # "SearchTask" folder, etc. Bring-your-own-TOML tasks (task_type is None) are
+    # skipped here — we can't reliably predict their folder name.
+    expected = Counter(
+        f"{t.task_type}Task" for t in tasks if t.toml_path is None and t.task_type
+    )
     discovered = Counter(tr.task_type for tr in result.tasks)
     missing = expected - discovered
     if missing:
