@@ -118,6 +118,11 @@ def invoke(args: list[str], *, timeout: float | None = None) -> subprocess.Compl
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             text=True,
+            # MetaMorpheus emits UTF-8 (e.g. the ± in tolerances, non-ASCII
+            # protein names). Decode as UTF-8, not the OS locale codepage
+            # (cp1252 on Windows), and never let a stray byte raise inside run().
+            encoding="utf-8",
+            errors="replace",
             timeout=timeout,
             check=False,
         )

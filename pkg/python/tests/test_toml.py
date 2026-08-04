@@ -6,6 +6,7 @@ from pathlib import Path
 
 import pytest
 
+from pymetamorpheus import UsageError
 from pymetamorpheus._toml import format_mods, patch_toml
 
 SAMPLE = """\
@@ -67,8 +68,19 @@ def test_patch_preserves_crlf(tmp_path):
     p.write_bytes(SAMPLE.replace("\n", "\r\n").encode("utf-8"))
     patch_toml(p, {("CommonParameters", "MaxThreadsToUsePerFile"): 4})
     raw = p.read_bytes()
+    assert b"MaxThreadsToUsePerFile = 4" in raw.replace(b"\r\n", b"\n")
     assert b"\r\n" in raw
-    assert b"\n\n" not in raw.replace(b"\r\n", b"")  # no bare LFs introduced
+    # No bare LF and no doubled CR: every LF is part of exactly one CRLF.
+    assert raw.count(b"\n") == raw.count(b"\r\n")
+    assert b"\r\r" not in raw
+
+
+def test_patch_preserves_lf(tmp_path):
+    p = tmp_path / "x.toml"
+    p.write_bytes(SAMPLE.encode("utf-8"))  # LF-only
+    patch_toml(p, {("CommonParameters", "MaxThreadsToUsePerFile"): 4})
+    raw = p.read_bytes()
+    assert b"\r" not in raw  # stays LF-only, not flipped to platform CRLF
 
 
 def test_format_mods_pipe_form():
@@ -83,5 +95,7 @@ def test_format_mods_passthrough_and_empty():
 
 
 def test_format_mods_rejects_malformed():
-    with pytest.raises(ValueError):
+    # Malformed mods raise UsageError (a PyMetaMorpheusError), not a bare
+    # ValueError, so every bad-input case is catchable under one hierarchy.
+    with pytest.raises(UsageError):
         format_mods(["OxidationOnM"])  # no Category|Name separator

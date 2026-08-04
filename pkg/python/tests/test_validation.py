@@ -50,6 +50,14 @@ def test_database_extensions(tmp_path):
         _validate_databases(_touch(tmp_path, "proteins.txt"))
 
 
+def test_database_gz_must_wrap_supported(tmp_path):
+    # proteins.fasta.gz is fine; a bare foo.gz is not.
+    ok = _touch(tmp_path, "proteins.fasta.gz")
+    assert _validate_databases(ok) == [ok]
+    with pytest.raises(mm.UsageError):
+        _validate_databases(_touch(tmp_path, "archive.gz"))
+
+
 def test_common_overrides_only_sets_provided():
     ov = common_overrides(precursor_tol_ppm=5, max_threads=8)
     assert ov[("CommonParameters", "PrecursorMassTolerance")] == "±5.0000 PPM"

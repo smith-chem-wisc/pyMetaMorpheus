@@ -20,11 +20,12 @@ from __future__ import annotations
 
 import shutil
 import tempfile
+from collections import Counter
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from ._errors import UsageError
-from ._runner import generate_default_tomls, invoke
+from ._errors import RunError, UsageError
+from ._runner import generate_default_tomls, invoke, locate_cli
 from ._toml import format_mods, patch_toml
 from .results import RunResult, discover_tasks
 
@@ -136,9 +137,19 @@ def _validate_spectra(spectra) -> list[Path]:
 def _validate_databases(database) -> list[Path]:
     paths = _as_path_list(database, "database")
     for p in paths:
-        if p.suffix.lower() not in _ALLOWED_DB_SUFFIXES:
+        suffix = p.suffix.lower()
+        if suffix == ".gz":
+            # A .gz is only valid if it wraps a supported database, e.g.
+            # proteins.fasta.gz — reject a bare foo.gz.
+            inner = Path(p.stem).suffix.lower()
+            if inner not in {".fasta", ".fa", ".xml"}:
+                raise UsageError(
+                    f"Unsupported compressed database {p.name!r}. A .gz database "
+                    "must wrap a .fasta/.fa/.xml (e.g. proteins.fasta.gz)."
+                )
+        elif suffix not in _ALLOWED_DB_SUFFIXES:
             raise UsageError(
-                f"Unsupported database format {p.suffix!r} for {p.name}. "
+                f"Unsupported database format {suffix!r} for {p.name}. "
                 "Expected a protein database: .fasta/.fa, .xml (UniProt), or a "
                 ".gz of either."
             )
@@ -159,12 +170,21 @@ def run_tasks(
     and return a :class:`RunResult`.
 
     This is the single choke point every public verb funnels through.
+
+    ``output_dir`` should be a fresh (or new) directory. Results are discovered by
+    scanning it for ``TaskN<Type>`` folders, so a directory left over from an
+    earlier run would surface stale task folders in the returned result.
     """
     if not tasks:
         raise UsageError("At least one task is required.")
 
     spectra_paths = _validate_spectra(spectra)
     database_paths = _validate_databases(database)
+
+    # Locate the CLI up front so a missing MetaMorpheus fails BEFORE we create the
+    # output directory (otherwise a not-found error leaves an empty dir behind).
+    locate_cli()
+
     out = Path(output_dir)
     out.mkdir(parents=True, exist_ok=True)
 
@@ -204,4 +224,22 @@ def run_tasks(
 
     result = RunResult(output_dir=out, stdout=proc.stdout, stderr=proc.stderr)
     result.tasks = discover_tasks(out)
+
+    # Fail loudly if MetaMorpheus exited 0 but produced no output folder for a
+    # task we asked for (GUIDANCE §8: a "succeeded but produced nothing" run is a
+    # failure, not a silent empty result). Each Task of type "Search" maps to a
+    # "SearchTask" folder, etc.
+    expected = Counter(f"{t.task_type}Task" for t in tasks)
+    discovered = Counter(tr.task_type for tr in result.tasks)
+    missing = expected - discovered
+    if missing:
+        want = ", ".join(sorted(missing.elements()))
+        got = ", ".join(sorted(discovered.elements())) or "none"
+        raise RunError(
+            "MetaMorpheus exited 0 but produced no output folder(s) for: "
+            f"{want} (found: {got}). The run may have failed silently or the "
+            "output layout changed.",
+            stdout=proc.stdout,
+            stderr=proc.stderr,
+        )
     return result

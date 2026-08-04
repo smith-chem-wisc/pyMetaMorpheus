@@ -46,7 +46,9 @@ import pymetamorpheus as mm
 import pymzlib
 
 result = mm.search("myrun.mzML", "proteins.fasta", "out")
-psms = pymzlib.readers.read_results(result.search.all_psms)   # parsed by pyMzLib
+# pyMetaMorpheus accessors return pathlib.Path; pyMzLib's readers currently
+# expect a string, so wrap with str(...).
+psms = pymzlib.readers.read_results(str(result.search.all_psms))   # parsed by pyMzLib
 ```
 
 Install the optional extra to pull pyMzLib in alongside pyMetaMorpheus:
@@ -54,6 +56,12 @@ Install the optional extra to pull pyMzLib in alongside pyMetaMorpheus:
 ```bash
 pip install "pymetamorpheus[pymzlib]"
 ```
+
+!!! note "pyMzLib isn't on PyPI yet"
+    Until the Smith-lab pyMzLib is published to PyPI, the `[pymzlib]` extra installs
+    it from source over git (see the extra in `pyproject.toml`). Do **not** run
+    `pip install pymzlib` on its own — an unrelated package of the same name exists
+    on PyPI. This resolves once pyMzLib is published (tracked with gap G-dist).
 
 !!! note "TSV, not CSV"
     MetaMorpheus writes tab-separated values. pyMetaMorpheus surfaces those files as-is — no

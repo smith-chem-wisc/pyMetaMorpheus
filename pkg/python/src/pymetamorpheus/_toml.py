@@ -15,6 +15,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from ._errors import UsageError
+
 
 def _format_value(value: object) -> str:
     """Render a Python value as its TOML literal (only the shapes we emit)."""
@@ -46,12 +48,14 @@ def patch_toml(
     were actually found and changed, so callers can detect a schema drift (an
     override that matched nothing).
     """
-    text = path.read_text(encoding="utf-8")
+    # Read with newline translation DISABLED (newline="") so the CRLF/LF the
+    # file actually uses survives to the detection below — read_text() would
+    # normalize CRLF->LF first and defeat it.
+    with open(path, "r", encoding="utf-8", newline="") as fh:
+        text = fh.read()
     # Preserve the file's existing newline style.
     newline = "\r\n" if "\r\n" in text else "\n"
-    lines = text.split("\n")
-    # Strip a trailing "\r" left by splitting a CRLF file on "\n".
-    lines = [ln[:-1] if ln.endswith("\r") else ln for ln in lines]
+    lines = text.split(newline)
 
     current: str | None = None
     applied: list[tuple[str | None, str]] = []
@@ -72,7 +76,10 @@ def patch_toml(
             lines[i] = f"{indent}{key} = {_format_value(overrides[target])}"
             applied.append(target)
 
-    path.write_text(newline.join(lines), encoding="utf-8")
+    # Write with translation disabled too, so `newline` is the only newline that
+    # reaches disk (write_text would re-translate "\n" to os.linesep).
+    with open(path, "w", encoding="utf-8", newline="") as fh:
+        fh.write(newline.join(lines))
     return applied
 
 
@@ -94,7 +101,9 @@ def format_mods(mods: list[str]) -> str:
             continue
         category, _, name = mod.partition("|")
         if not name:
-            raise ValueError(
+            # UsageError (not bare ValueError) so callers can catch every
+            # bad-input case under PyMetaMorpheusError, like the other validators.
+            raise UsageError(
                 f"Modification {mod!r} must be 'Category|Name', e.g. "
                 "'Common Variable|Oxidation on M'."
             )

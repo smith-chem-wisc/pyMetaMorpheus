@@ -28,7 +28,26 @@ All notable changes to pyMetaMorpheus are recorded here. Format loosely follows
 - **Zero-dependency packaging** (`pyproject.toml`, hatchling), optional extras `[pymzlib]`,
   `[pandas]`, `[dev]`.
 
+### Hardening (from a four-auditor review)
+- CLI is located **before** the output directory is created, so a missing MetaMorpheus no longer
+  leaves an empty output folder behind.
+- Malformed modification strings now raise `UsageError` (a `PyMetaMorpheusError`), not a bare
+  `ValueError` — every bad-input case is catchable under one hierarchy.
+- TOML patching genuinely **preserves the source newline style** (CRLF stays CRLF, LF stays LF)
+  instead of rewriting to the platform default.
+- A run that exits 0 but produces **no expected task folder** now fails loudly with `RunError`
+  instead of returning a silent empty result.
+- Subprocess output is decoded as **UTF-8** (not the OS locale codepage), so `±` and non-ASCII
+  names in MetaMorpheus output can't raise an untyped `UnicodeDecodeError`.
+- A `.gz` database must wrap a `.fasta`/`.fa`/`.xml` (a bare `foo.gz` is rejected).
+- `[pymzlib]` extra points at pyMzLib by VCS (it isn't on PyPI, and a same-named unrelated package
+  is) — provisional until pyMzLib is published; docs updated with `str(...)` around the pyMzLib
+  composition example.
+
 ### Notes
 - Verified end-to-end through the Python API against MetaMorpheus's bundled
-  `SmallCalibratible_Yeast.mzML` + `SmallYeast.fasta` (89 PSMs).
+  `SmallCalibratible_Yeast.mzML` + `SmallYeast.fasta` (89 PSMs), and independently on **real 227 MB
+  human PRIDE data (PXD008952) fetched via pyMzLib** against UniProt human Swiss-Prot (15,796 PSMs).
 - Results are standard mzLib files — parse them by composing with pyMzLib, not by re-parsing here.
+- Known limitations (by design): `.mzML` only (`.raw` deferred, G-settings); no progress streaming
+  during long runs; cross-link search (`XLSearchTask`) not yet exposed.

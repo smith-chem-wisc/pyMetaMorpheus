@@ -27,7 +27,11 @@ dependencies = []
 [project.optional-dependencies]
 # Rich, parsed result tables come from mzLib's own readers via pyMzLib — compose,
 # don't re-parse (gap G-parse, Option 2). Optional so the core stays dep-free.
-pymzlib = ["pymzlib"]
+# PROVISIONAL: pyMzLib is not on PyPI yet, and an UNRELATED package named
+# `pymzlib` exists there — so we point at the real one by VCS. Once the Smith-lab
+# pyMzLib is published to PyPI, replace this with a plain version pin (tracked
+# with gap G-dist). A direct URL here intentionally blocks PyPI upload until then.
+pymzlib = ["pymzlib @ git+https://github.com/smith-chem-wisc/pyMzLib#subdirectory=pkg/python"]
 # Convenience DataFrame conversion for notebook users.
 pandas = ["pandas"]
 # Dev/test toolchain.

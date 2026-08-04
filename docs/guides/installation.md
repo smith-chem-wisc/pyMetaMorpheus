@@ -14,6 +14,12 @@ pyMetaMorpheus has **zero required third-party dependencies**. Optional extras:
 | `pymetamorpheus[pandas]` | pandas | DataFrame convenience |
 | `pymetamorpheus[dev]` | pytest, pytest-cov | running the test suite |
 
+!!! warning "The `[pymzlib]` extra is provisional"
+    pyMzLib isn't on PyPI yet, so this extra installs it from source over git. An
+    **unrelated** package named `pymzlib` also exists on PyPI — don't `pip install
+    pymzlib` on its own. This is tidied to a normal version pin once pyMzLib is
+    published (gap G-dist).
+
 ## How the MetaMorpheus CLI is found
 
 pyMetaMorpheus drives the MetaMorpheus command-line program. The runner locates it in this order:
