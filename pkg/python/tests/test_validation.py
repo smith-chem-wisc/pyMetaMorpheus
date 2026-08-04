@@ -85,3 +85,16 @@ def test_task_builders_shape():
     assert mm.make_gptmd_task().toml_filename == "GptmdTask.toml"
     g = mm.make_glyco_search_task(glyco_search_type="NGlycanSearch")
     assert g.overrides[("_glycoSearchParameters", "GlycoSearchType")] == "NGlycanSearch"
+
+
+def test_search_quantification_overrides():
+    sp = "SearchParameters"
+    # Default: no quant overrides (keep MetaMorpheus's own LFQ-on default).
+    assert not any(k[0] == sp for k in mm.make_search_task().overrides)
+    t = mm.make_search_task(
+        quantify=False, match_between_runs=True, normalize=True, quantify_ppm_tol=10
+    )
+    assert t.overrides[(sp, "DoLabelFreeQuantification")] is False
+    assert t.overrides[(sp, "MatchBetweenRuns")] is True
+    assert t.overrides[(sp, "Normalize")] is True
+    assert t.overrides[(sp, "QuantifyPpmTol")] == 10.0

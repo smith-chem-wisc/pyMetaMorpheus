@@ -65,7 +65,39 @@ mm.search(
 )
 ```
 
-### A word on threads
+## Quantification (FlashLFQ)
+
+Label-free quantification runs **as part of the search** and is **on by default** — a plain
+`search(...)` already writes FlashLFQ output alongside the identifications:
+
+```python
+result = mm.search("myrun.mzML", "proteins.fasta", "out")
+s = result.search
+s.quantified_proteins   # AllQuantifiedProteinGroups.tsv
+s.quantified_peptides   # AllQuantifiedPeptides.tsv
+s.quantified_peaks      # AllQuantifiedPeaks.tsv
+```
+
+The quant knobs (all optional; None keeps MetaMorpheus's default):
+
+| parameter | MetaMorpheus setting | default |
+|---|---|---|
+| `quantify` | `DoLabelFreeQuantification` | on |
+| `match_between_runs` | `MatchBetweenRuns` | off |
+| `normalize` | `Normalize` | off |
+| `quantify_ppm_tol` | `QuantifyPpmTol` | 5.0 |
+
+```python
+# Turn quant off, or tune it:
+mm.search(spectra, database, "out", quantify=False)
+mm.search([run1, run2], database, "out", match_between_runs=True, quantify_ppm_tol=10)
+```
+
+!!! tip "Match-between-runs needs multiple files"
+    MBR transfers identifications across runs, so pass several `.mzML` files in one `search(...)`
+    call for it to do anything.
+
+## A word on threads
 
 `max_threads` maps straight to MetaMorpheus's own `MaxThreadsToUsePerFile`. pyMetaMorpheus never
 launches multiple CLI runs in parallel to "go faster" — MetaMorpheus parallelizes **within** one

@@ -8,6 +8,10 @@ All notable changes to pyMetaMorpheus are recorded here. Format loosely follows
 ### Added
 - **Classic search vignette** — `search(spectra, database, output_dir, ...)` runs a MetaMorpheus
   classic search and returns a typed `RunResult` (`result.search.all_psms`, etc.).
+- **Label-free quantification (FlashLFQ)** — runs as part of the search (on by default). New
+  `search()` knobs `quantify`, `match_between_runs`, `normalize`, `quantify_ppm_tol`, and result
+  accessors `quantified_proteins` / `quantified_peptides` / `quantified_peaks`
+  (`AllQuantified*.tsv`).
 - **All four task types** as sibling verbs on the shared engine: `calibrate` (CalibrationTask),
   `gptmd` (GptmdTask), `search` (SearchTask), `glyco_search` (GlycoSearchTask).
 - **`pipeline([...tasks], ...)`** — run several tasks in one MetaMorpheus invocation (the canonical

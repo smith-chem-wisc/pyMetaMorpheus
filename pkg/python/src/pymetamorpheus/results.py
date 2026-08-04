@@ -59,6 +59,21 @@ class TaskResult:
         return self.file("AllQuantifiedProteinGroups.tsv")
 
     @property
+    def quantified_proteins(self) -> Path | None:
+        """Alias for :attr:`all_proteins` — FlashLFQ protein-group intensities."""
+        return self.file("AllQuantifiedProteinGroups.tsv")
+
+    @property
+    def quantified_peptides(self) -> Path | None:
+        """``AllQuantifiedPeptides.tsv`` — FlashLFQ peptide intensities (Search)."""
+        return self.file("AllQuantifiedPeptides.tsv")
+
+    @property
+    def quantified_peaks(self) -> Path | None:
+        """``AllQuantifiedPeaks.tsv`` — FlashLFQ per-peak quantification (Search)."""
+        return self.file("AllQuantifiedPeaks.tsv")
+
+    @property
     def mzid(self) -> list[Path]:
         """Any ``.mzID`` identification files."""
         return self.glob("*.mzID")

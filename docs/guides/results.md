@@ -25,7 +25,9 @@ when the file isn't present (so you can duck-type across task types):
 |---|---|
 | `all_psms` | `AllPSMs.psmtsv` |
 | `all_peptides` | `AllPeptides.psmtsv` |
-| `all_proteins` | `AllQuantifiedProteinGroups.tsv` |
+| `all_proteins` / `quantified_proteins` | `AllQuantifiedProteinGroups.tsv` |
+| `quantified_peptides` | `AllQuantifiedPeptides.tsv` |
+| `quantified_peaks` | `AllQuantifiedPeaks.tsv` |
 | `mzid` | `*.mzID` |
 | `calibrated_spectra` | `*-calib.mzML` |
 | `gptmd_database` | `*GPTMD.xml` |

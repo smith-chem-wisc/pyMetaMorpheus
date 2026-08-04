@@ -45,22 +45,40 @@ def make_search_task(
     min_peptide_length: int | None = None,
     max_peptide_length: int | None = None,
     max_threads: int | None = None,
+    quantify: bool | None = None,
+    match_between_runs: bool | None = None,
+    normalize: bool | None = None,
+    quantify_ppm_tol: float | None = None,
 ) -> Task:
-    """A classic ``SearchTask`` with the common parameters overridden."""
-    return Task(
-        task_type="Search",
-        overrides=common_overrides(
-            precursor_tol_ppm=precursor_tol_ppm,
-            product_tol_ppm=product_tol_ppm,
-            fixed_mods=fixed_mods,
-            variable_mods=variable_mods,
-            protease=protease,
-            max_missed_cleavages=max_missed_cleavages,
-            min_peptide_length=min_peptide_length,
-            max_peptide_length=max_peptide_length,
-            max_threads=max_threads,
-        ),
+    """A classic ``SearchTask`` with the common parameters overridden.
+
+    Quantification (FlashLFQ) is part of the search task and is ON by default in
+    MetaMorpheus, producing ``AllQuantifiedProteinGroups.tsv`` /
+    ``AllQuantifiedPeptides.tsv`` / ``AllQuantifiedPeaks.tsv``. The quant knobs
+    below map to ``[SearchParameters]``; leave them None to keep MetaMorpheus's
+    defaults.
+    """
+    overrides = common_overrides(
+        precursor_tol_ppm=precursor_tol_ppm,
+        product_tol_ppm=product_tol_ppm,
+        fixed_mods=fixed_mods,
+        variable_mods=variable_mods,
+        protease=protease,
+        max_missed_cleavages=max_missed_cleavages,
+        min_peptide_length=min_peptide_length,
+        max_peptide_length=max_peptide_length,
+        max_threads=max_threads,
     )
+    sp = "SearchParameters"
+    if quantify is not None:
+        overrides[(sp, "DoLabelFreeQuantification")] = bool(quantify)
+    if match_between_runs is not None:
+        overrides[(sp, "MatchBetweenRuns")] = bool(match_between_runs)
+    if normalize is not None:
+        overrides[(sp, "Normalize")] = bool(normalize)
+    if quantify_ppm_tol is not None:
+        overrides[(sp, "QuantifyPpmTol")] = float(quantify_ppm_tol)
+    return Task(task_type="Search", overrides=overrides)
 
 
 def make_calibration_task(
@@ -145,6 +163,10 @@ def search(
     min_peptide_length: int | None = None,
     max_peptide_length: int | None = None,
     max_threads: int | None = None,
+    quantify: bool | None = None,
+    match_between_runs: bool | None = None,
+    normalize: bool | None = None,
+    quantify_ppm_tol: float | None = None,
     timeout: float | None = None,
 ) -> RunResult:
     """Run a classic MetaMorpheus search.
@@ -153,6 +175,11 @@ def search(
     protein ``.fasta``/``.xml``(``.gz``); ``output_dir`` is where the run
     directory is written. Returns a :class:`RunResult` whose ``.search`` exposes
     ``AllPSMs.psmtsv`` and friends.
+
+    Label-free quantification (FlashLFQ) runs as part of the search and is ON by
+    default, so ``result.search.quantified_proteins`` / ``quantified_peptides`` /
+    ``quantified_peaks`` are populated. Turn it off with ``quantify=False``, or
+    enable match-between-runs with ``match_between_runs=True``.
     """
     task = make_search_task(
         precursor_tol_ppm=precursor_tol_ppm,
@@ -164,6 +191,10 @@ def search(
         min_peptide_length=min_peptide_length,
         max_peptide_length=max_peptide_length,
         max_threads=max_threads,
+        quantify=quantify,
+        match_between_runs=match_between_runs,
+        normalize=normalize,
+        quantify_ppm_tol=quantify_ppm_tol,
     )
     return run_tasks(
         [task], spectra=spectra, database=database, output_dir=output_dir, timeout=timeout
