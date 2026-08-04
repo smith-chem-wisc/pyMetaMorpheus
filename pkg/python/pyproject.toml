@@ -1,0 +1,54 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "pymetamorpheus"
+version = "0.0.1"
+description = "MetaMorpheus, callable from Python — a dependency-free, faithful projection of the MetaMorpheus CLI."
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "MIT" }
+authors = [{ name = "Smith Lab (UW-Madison)" }]
+keywords = ["proteomics", "mass-spectrometry", "metamorpheus", "mzlib", "search"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Intended Audience :: Science/Research",
+    "Topic :: Scientific/Engineering :: Bio-Informatics",
+    "Operating System :: OS Independent",
+]
+
+# ZERO third-party runtime dependencies (decision D2). The package drives a
+# self-contained MetaMorpheus CLI via the standard library only. Everything a
+# user could want beyond that is an optional extra, never a hard requirement.
+dependencies = []
+
+[project.optional-dependencies]
+# Rich, parsed result tables come from mzLib's own readers via pyMzLib — compose,
+# don't re-parse (gap G-parse, Option 2). Optional so the core stays dep-free.
+pymzlib = ["pymzlib"]
+# Convenience DataFrame conversion for notebook users.
+pandas = ["pandas"]
+# Dev/test toolchain.
+dev = ["pytest>=7", "pytest-cov"]
+
+[project.urls]
+Homepage = "https://github.com/smith-chem-wisc/pyMetaMorpheus"
+Source = "https://github.com/smith-chem-wisc/pyMetaMorpheus"
+"MetaMorpheus" = "https://github.com/smith-chem-wisc/MetaMorpheus"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/pymetamorpheus"]
+
+# The self-contained CLI payload is staged into src/pymetamorpheus/_dotnet/ at
+# build time (gitignored; see pkg/build/publish-runner.ps1 and gap G-dist). It is
+# NOT committed. Because the payload can exceed PyPI's 100 MB per-file limit, the
+# shipping model is likely download-at-install rather than bundling — decided in
+# G-dist before the first release.
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = [
+    "live: tests that invoke the real MetaMorpheus CLI (needs PYMM_METAMORPHEUS).",
+]

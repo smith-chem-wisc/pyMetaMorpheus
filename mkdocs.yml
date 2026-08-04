@@ -1,0 +1,37 @@
+site_name: pyMetaMorpheus
+site_description: MetaMorpheus, callable from Python — dependency-free.
+repo_url: https://github.com/smith-chem-wisc/pyMetaMorpheus
+repo_name: smith-chem-wisc/pyMetaMorpheus
+docs_dir: docs
+
+theme:
+  name: material
+  palette:
+    - scheme: default
+      primary: indigo
+      toggle:
+        icon: material/weather-night
+        name: Switch to dark mode
+    - scheme: slate
+      primary: indigo
+      toggle:
+        icon: material/weather-sunny
+        name: Switch to light mode
+  features:
+    - navigation.sections
+    - content.code.copy
+
+nav:
+  - Home: index.md
+  - Guides:
+      - Classic search: guides/search.md
+      - Calibration, GPTMD, glyco & pipelines: guides/tasks.md
+      - Results & output files: guides/results.md
+      - Installation & locating the CLI: guides/installation.md
+  - Changelog: changelog.md
+
+markdown_extensions:
+  - admonition
+  - pymdownx.highlight
+  - pymdownx.superfences
+  - tables

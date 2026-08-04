@@ -1,0 +1,17 @@
+# Staged self-contained MetaMorpheus CLI (built at release, not committed).
+pkg/python/src/pymetamorpheus/_dotnet/
+pkg/**/bin/
+pkg/**/obj/
+
+# Python build/venv/cache
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+build/
+dist/
+*.egg-info/
+
+# OS / editor
+.DS_Store
+Thumbs.db

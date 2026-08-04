@@ -1,0 +1,70 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  # Offline suite — no MetaMorpheus CLI needed. Proves the package is pure-Python,
+  # dependency-free, and cross-OS (Windows / Linux / macOS incl. Apple Silicon),
+  # exactly the matrix pyMzLib runs.
+  offline:
+    name: offline (${{ matrix.os }} / py${{ matrix.python-version }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest, macos-14]
+        python-version: ["3.9", "3.12", "3.13"]
+        exclude:
+          # macos-14 (Apple Silicon) has no 3.9; cover arm64 on newer Pythons.
+          - os: macos-14
+            python-version: "3.9"
+    defaults:
+      run:
+        working-directory: pkg/python
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install (editable, dev extras)
+        run: python -m pip install -e ".[dev]"
+      - name: No third-party runtime dependency
+        # The core package must import with only the standard library present.
+        run: python -c "import pymetamorpheus; print(pymetamorpheus.__version__)"
+      - name: Offline tests
+        run: python -m pytest -q -m "not live"
+
+  # Live canary — builds a self-contained MetaMorpheus CLI on Linux (no .NET
+  # pre-installed beyond the SDK used to publish) and runs a real search through
+  # the Python API, proving the round-trip end to end.
+  live:
+    name: live (ubuntu, self-contained CLI)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+      - name: Clone pinned MetaMorpheus
+        run: |
+          git clone --depth 1 https://github.com/smith-chem-wisc/MetaMorpheus.git mm
+      - name: Publish self-contained CLI (linux-x64)
+        shell: pwsh
+        run: |
+          ./pkg/build/publish-runner.ps1 -Rid linux-x64 -MetaMorpheusRoot "$PWD/mm"
+      - name: Install package
+        working-directory: pkg/python
+        run: python -m pip install -e ".[dev]"
+      - name: Live tests (staged payload; no PYMM_METAMORPHEUS)
+        working-directory: pkg/python
+        env:
+          # Point the sample-data fixture at the cloned MetaMorpheus data dir.
+          PYMM_SAMPLE_DATA: ${{ github.workspace }}/mm/MetaMorpheus/EngineLayer/Data
+        run: python -m pytest -q -m live
