@@ -12,6 +12,15 @@ All notable changes to pyMetaMorpheus are recorded here. Format loosely follows
   `search()` knobs `quantify`, `match_between_runs`, `normalize`, `quantify_ppm_tol`, and result
   accessors `quantified_proteins` / `quantified_peptides` / `quantified_peaks`
   (`AllQuantified*.tsv`).
+- **Spectral library generation** — `search(..., write_spectral_library=True)` emits a `.msp`
+  spectral library from the confirmed IDs (`update_spectral_library` to update an existing one);
+  exposed as `result.search.spectral_library`.
+
+### Fixed
+- **CI/packaging**: `pkg/build/publish-runner.ps1` was being swallowed by a too-broad `build/`
+  gitignore rule (now anchored to `pkg/python/build/`), which broke the live CI job. Enabled
+  `tool.hatch.metadata.allow-direct-references` so the `[pymzlib]` git extra passes hatchling's
+  metadata validation (the offline CI jobs failed to `pip install` without it).
 - **All four task types** as sibling verbs on the shared engine: `calibrate` (CalibrationTask),
   `gptmd` (GptmdTask), `search` (SearchTask), `glyco_search` (GlycoSearchTask).
 - **`pipeline([...tasks], ...)`** — run several tasks in one MetaMorpheus invocation (the canonical

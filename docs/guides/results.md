@@ -28,6 +28,7 @@ when the file isn't present (so you can duck-type across task types):
 | `all_proteins` / `quantified_proteins` | `AllQuantifiedProteinGroups.tsv` |
 | `quantified_peptides` | `AllQuantifiedPeptides.tsv` |
 | `quantified_peaks` | `AllQuantifiedPeaks.tsv` |
+| `spectral_library` | `*.msp` (when `write_spectral_library=True`) |
 | `mzid` | `*.mzID` |
 | `calibrated_spectra` | `*-calib.mzML` |
 | `gptmd_database` | `*GPTMD.xml` |

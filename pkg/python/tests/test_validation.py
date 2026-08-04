@@ -98,3 +98,12 @@ def test_search_quantification_overrides():
     assert t.overrides[(sp, "MatchBetweenRuns")] is True
     assert t.overrides[(sp, "Normalize")] is True
     assert t.overrides[(sp, "QuantifyPpmTol")] == 10.0
+
+
+def test_search_spectral_library_overrides():
+    sp = "SearchParameters"
+    # Off by default (no override emitted).
+    assert ("SearchParameters", "WriteSpectralLibrary") not in mm.make_search_task().overrides
+    t = mm.make_search_task(write_spectral_library=True, update_spectral_library=False)
+    assert t.overrides[(sp, "WriteSpectralLibrary")] is True
+    assert t.overrides[(sp, "UpdateSpectralLibrary")] is False

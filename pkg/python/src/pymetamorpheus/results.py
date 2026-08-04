@@ -74,6 +74,12 @@ class TaskResult:
         return self.file("AllQuantifiedPeaks.tsv")
 
     @property
+    def spectral_library(self) -> list[Path]:
+        """Spectral libraries written by the search (``*.msp``), when
+        ``write_spectral_library=True`` was passed to :func:`search`."""
+        return self.glob("*.msp")
+
+    @property
     def mzid(self) -> list[Path]:
         """Any ``.mzID`` identification files."""
         return self.glob("*.mzID")

@@ -42,6 +42,14 @@ Homepage = "https://github.com/smith-chem-wisc/pyMetaMorpheus"
 Source = "https://github.com/smith-chem-wisc/pyMetaMorpheus"
 "MetaMorpheus" = "https://github.com/smith-chem-wisc/MetaMorpheus"
 
+[tool.hatch.metadata]
+# The [pymzlib] extra uses a git direct reference (pyMzLib isn't on PyPI yet, and
+# a same-named unrelated package is). Hatchling validates every extra at metadata
+# time — even ones not being installed — so this must be enabled or `pip install`
+# of ANY extra fails. Provisional: drop the direct ref (and this flag) once
+# pyMzLib is on PyPI (gap G-dist).
+allow-direct-references = true
+
 [tool.hatch.build.targets.wheel]
 packages = ["src/pymetamorpheus"]
 

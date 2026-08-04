@@ -1,0 +1,86 @@
+<#
+.SYNOPSIS
+  Stage a self-contained MetaMorpheus CLI into the pyMetaMorpheus wheel payload.
+
+.DESCRIPTION
+  The analogue of pyMzLib's publish-bridge.ps1. Publishes the MetaMorpheus CMD
+  project self-contained for a given .NET runtime identifier (RID) and copies the
+  output into src/pymetamorpheus/_dotnet/, which the wheel ships (gitignored;
+  built, not committed). A self-contained build runs WITHOUT a .NET install on the
+  target machine — the "just works" guarantee (decision D2).
+
+  Runs on any OS: pwsh (PowerShell Core) is cross-platform, and `dotnet publish`
+  cross-compiles to any RID. So Windows/Linux/macOS wheels are all producible.
+
+  NOTE on size (gap G-dist): a self-contained build can exceed PyPI's 100 MB
+  per-file limit. The shipping model — bundle in the wheel vs. download-at-install
+  on first use — is decided in G-dist before the first public release. This script
+  produces the payload either way.
+
+.PARAMETER Rid
+  .NET runtime identifier: win-x64 | linux-x64 | osx-x64 | osx-arm64.
+
+.PARAMETER MetaMorpheusRoot
+  Path to the pinned MetaMorpheus checkout (contains MetaMorpheus\CMD\CMD.csproj).
+  See code/PINNED.md for the pin this wheel is built from.
+
+.PARAMETER Configuration
+  Debug | Release. Default Release.
+
+.EXAMPLE
+  pwsh pkg/build/publish-runner.ps1 -Rid win-x64 -MetaMorpheusRoot E:\GitClones\MetaMorpheus
+#>
+[CmdletBinding()]
+param(
+    [Parameter(Mandatory = $true)]
+    [ValidateSet("win-x64", "linux-x64", "osx-x64", "osx-arm64")]
+    [string]$Rid,
+
+    [Parameter(Mandatory = $true)]
+    [string]$MetaMorpheusRoot,
+
+    [string]$Configuration = "Release"
+)
+
+$ErrorActionPreference = "Stop"
+
+$csproj = Join-Path $MetaMorpheusRoot "MetaMorpheus/CMD/CMD.csproj"
+if (-not (Test-Path $csproj)) {
+    throw "CMD.csproj not found at $csproj. Point -MetaMorpheusRoot at the MetaMorpheus checkout root."
+}
+
+# Destination inside the package (gitignored).
+$pkgSrc = Join-Path $PSScriptRoot "../python/src/pymetamorpheus"
+$dest = Join-Path $pkgSrc "_dotnet"
+Resolve-Path $pkgSrc | Out-Null
+
+Write-Host "Publishing MetaMorpheus CMD ($Configuration, $Rid) self-contained..."
+$publishDir = Join-Path ([System.IO.Path]::GetTempPath()) "pymm_publish_$Rid"
+if (Test-Path $publishDir) { Remove-Item -Recurse -Force $publishDir }
+
+# Self-contained, single native apphost (CMD.exe / extensionless CMD) so the
+# target needs no .NET runtime installed.
+& dotnet publish $csproj `
+    -c $Configuration `
+    -r $Rid `
+    --self-contained true `
+    -p:PublishSingleFile=false `
+    -o $publishDir
+if ($LASTEXITCODE -ne 0) { throw "dotnet publish failed (exit $LASTEXITCODE)." }
+
+Write-Host "Staging into $dest ..."
+if (Test-Path $dest) { Remove-Item -Recurse -Force $dest }
+New-Item -ItemType Directory -Force -Path $dest | Out-Null
+Copy-Item -Recurse -Force (Join-Path $publishDir "*") $dest
+
+# On POSIX the native apphost needs the execute bit; a Windows-built wheel for a
+# POSIX RID must carry it. pwsh on POSIX can chmod; on Windows this is a no-op and
+# the CI job that builds the POSIX wheel (running on Linux/macOS) sets it.
+$apphost = Join-Path $dest "CMD"
+if (Test-Path $apphost -PathType Leaf) {
+    if ($IsLinux -or $IsMacOS) { & chmod +x $apphost }
+}
+
+$size = (Get-ChildItem -Recurse $dest | Measure-Object Length -Sum).Sum / 1MB
+Write-Host ("Staged payload: {0:N1} MB at {1}" -f $size, $dest)
+Write-Host "Done. (Remember: payload is gitignored; see code/PINNED.md for the pin.)"

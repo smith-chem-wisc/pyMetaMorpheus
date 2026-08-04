@@ -49,14 +49,17 @@ def make_search_task(
     match_between_runs: bool | None = None,
     normalize: bool | None = None,
     quantify_ppm_tol: float | None = None,
+    write_spectral_library: bool | None = None,
+    update_spectral_library: bool | None = None,
 ) -> Task:
     """A classic ``SearchTask`` with the common parameters overridden.
 
     Quantification (FlashLFQ) is part of the search task and is ON by default in
     MetaMorpheus, producing ``AllQuantifiedProteinGroups.tsv`` /
-    ``AllQuantifiedPeptides.tsv`` / ``AllQuantifiedPeaks.tsv``. The quant knobs
-    below map to ``[SearchParameters]``; leave them None to keep MetaMorpheus's
-    defaults.
+    ``AllQuantifiedPeptides.tsv`` / ``AllQuantifiedPeaks.tsv``. Spectral-library
+    generation is OFF by default — set ``write_spectral_library=True`` to have the
+    search emit a ``.msp`` spectral library. All the knobs below map to
+    ``[SearchParameters]``; leave them None to keep MetaMorpheus's defaults.
     """
     overrides = common_overrides(
         precursor_tol_ppm=precursor_tol_ppm,
@@ -78,6 +81,10 @@ def make_search_task(
         overrides[(sp, "Normalize")] = bool(normalize)
     if quantify_ppm_tol is not None:
         overrides[(sp, "QuantifyPpmTol")] = float(quantify_ppm_tol)
+    if write_spectral_library is not None:
+        overrides[(sp, "WriteSpectralLibrary")] = bool(write_spectral_library)
+    if update_spectral_library is not None:
+        overrides[(sp, "UpdateSpectralLibrary")] = bool(update_spectral_library)
     return Task(task_type="Search", overrides=overrides)
 
 
@@ -167,6 +174,8 @@ def search(
     match_between_runs: bool | None = None,
     normalize: bool | None = None,
     quantify_ppm_tol: float | None = None,
+    write_spectral_library: bool | None = None,
+    update_spectral_library: bool | None = None,
     timeout: float | None = None,
 ) -> RunResult:
     """Run a classic MetaMorpheus search.
@@ -180,6 +189,9 @@ def search(
     default, so ``result.search.quantified_proteins`` / ``quantified_peptides`` /
     ``quantified_peaks`` are populated. Turn it off with ``quantify=False``, or
     enable match-between-runs with ``match_between_runs=True``.
+
+    Pass ``write_spectral_library=True`` to also generate a ``.msp`` spectral
+    library from the confirmed IDs — find it at ``result.search.spectral_library``.
     """
     task = make_search_task(
         precursor_tol_ppm=precursor_tol_ppm,
@@ -195,6 +207,8 @@ def search(
         match_between_runs=match_between_runs,
         normalize=normalize,
         quantify_ppm_tol=quantify_ppm_tol,
+        write_spectral_library=write_spectral_library,
+        update_spectral_library=update_spectral_library,
     )
     return run_tasks(
         [task], spectra=spectra, database=database, output_dir=output_dir, timeout=timeout

@@ -97,6 +97,28 @@ mm.search([run1, run2], database, "out", match_between_runs=True, quantify_ppm_t
     MBR transfers identifications across runs, so pass several `.mzML` files in one `search(...)`
     call for it to do anything.
 
+## Spectral library generation
+
+A search can emit a **spectral library** (`.msp`) built from its confirmed identifications — useful as
+input to library-based searches. It's **off by default**; turn it on with `write_spectral_library`:
+
+```python
+result = mm.search(
+    "myrun.mzML", "proteins.fasta", "out",
+    write_spectral_library=True,
+)
+result.search.spectral_library      # [Path(".../SpectralLibrary_<timestamp>.msp")]
+```
+
+| parameter | MetaMorpheus setting | default |
+|---|---|---|
+| `write_spectral_library` | `WriteSpectralLibrary` | off |
+| `update_spectral_library` | `UpdateSpectralLibrary` | off |
+
+`update_spectral_library=True` updates an existing library rather than writing a fresh one. The
+library file lands in the search task's output folder and is exposed as a list (there may be more
+than one) via `result.search.spectral_library`.
+
 ## A word on threads
 
 `max_threads` maps straight to MetaMorpheus's own `MaxThreadsToUsePerFile`. pyMetaMorpheus never
