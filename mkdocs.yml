@@ -1,5 +1,6 @@
 site_name: pyMetaMorpheus
 site_description: MetaMorpheus, callable from Python — dependency-free.
+site_url: https://smith-chem-wisc.github.io/pyMetaMorpheus/
 repo_url: https://github.com/smith-chem-wisc/pyMetaMorpheus
 repo_name: smith-chem-wisc/pyMetaMorpheus
 docs_dir: docs
@@ -31,7 +32,23 @@ nav:
       - Full parameter access: guides/full-access.md
       - Results & output files: guides/results.md
       - Installation & locating the CLI: guides/installation.md
+  - API reference: reference.md
   - Changelog: changelog.md
+
+plugins:
+  - search
+  - mkdocstrings:
+      handlers:
+        python:
+          options:
+            show_root_heading: true
+            show_root_full_path: false
+            show_source: false
+            heading_level: 3
+            members_order: source
+            separate_signature: true
+            show_signature_annotations: true
+            docstring_section_style: table
 
 markdown_extensions:
   - admonition
