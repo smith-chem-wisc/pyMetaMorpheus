@@ -2,6 +2,10 @@
 
 **MetaMorpheus, callable from Python — with zero dependency friction.**
 
+📖 **Documentation: https://smith-chem-wisc.github.io/pyMetaMorpheus/** — start with
+[Getting started](https://smith-chem-wisc.github.io/pyMetaMorpheus/guides/getting-started/), or jump to
+the [API reference](https://smith-chem-wisc.github.io/pyMetaMorpheus/reference/).
+
 [MetaMorpheus](https://github.com/smith-chem-wisc/MetaMorpheus) is a mass-spectrometry
 proteomics search engine (calibration, GPTMD, peptide/protein search, glyco search) built by the
 Smith lab on top of [mzLib](https://github.com/smith-chem-wisc/mzLib). It already ships a command
