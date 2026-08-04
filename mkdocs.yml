@@ -23,7 +23,9 @@ theme:
 
 nav:
   - Home: index.md
+  - Getting started: guides/getting-started.md
   - Guides:
+      - Getting your data (PRIDE & UniProt): guides/getting-data.md
       - Classic search: guides/search.md
       - Calibration, GPTMD, glyco & pipelines: guides/tasks.md
       - Full parameter access: guides/full-access.md
@@ -35,4 +37,6 @@ markdown_extensions:
   - admonition
   - pymdownx.highlight
   - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
   - tables

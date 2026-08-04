@@ -46,7 +46,10 @@ work-around.
 
 ## Next
 
-- [Guides → Classic search](guides/search.md)
-- [Guides → Calibration, GPTMD, glyco & pipelines](guides/tasks.md)
-- [Guides → Results & output files](guides/results.md)
-- [Guides → Installation & locating the CLI](guides/installation.md)
+- **[Getting started](guides/getting-started.md)** — zero to your first identified peptides.
+- [Getting your data (PRIDE & UniProt)](guides/getting-data.md) — fetch spectra and databases in Python.
+- [Classic search](guides/search.md)
+- [Calibration, GPTMD, glyco & pipelines](guides/tasks.md)
+- [Full parameter access](guides/full-access.md)
+- [Results — finding and reading your output](guides/results.md)
+- [Installation & locating the CLI](guides/installation.md)
