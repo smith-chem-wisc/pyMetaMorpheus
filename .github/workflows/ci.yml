@@ -5,6 +5,10 @@ on:
     branches: [main, master]
   pull_request:
   workflow_dispatch:
+  # release.yml calls this workflow on a tag rather than restating the matrix. Two copies of a
+  # test matrix drift, and the copy that drifts is the one that only runs on release day — the
+  # single occasion when nobody wants to discover that the gate they trusted was a stale duplicate.
+  workflow_call:
 
 jobs:
   # Offline suite — no MetaMorpheus CLI needed. Proves the package is pure-Python,
