@@ -21,8 +21,15 @@
   .NET runtime identifier: win-x64 | linux-x64 | osx-x64 | osx-arm64.
 
 .PARAMETER MetaMorpheusRoot
-  Path to the pinned MetaMorpheus checkout (contains MetaMorpheus\CMD\CMD.csproj).
-  See code/PINNED.md for the pin this wheel is built from.
+  Path to the MetaMorpheus checkout (contains MetaMorpheus\CMD\CMD.csproj). Its
+  HEAD must match the commit in code/metamorpheus.pin — this script checks, and
+  refuses to stage a payload built from anything else, because the wheel would
+  then be a projection of a build nothing recorded. See code/PINNED.md.
+
+.PARAMETER IgnorePin
+  Stage the payload even when the checkout's HEAD is not the pinned commit. For
+  deliberate experiments (testing an upstream fix before it is pinned). The
+  resulting payload must not be released.
 
 .PARAMETER Configuration
   Debug | Release. Default Release.
@@ -39,6 +46,8 @@ param(
     [Parameter(Mandatory = $true)]
     [string]$MetaMorpheusRoot,
 
+    [switch]$IgnorePin,
+
     [string]$Configuration = "Release"
 )
 
@@ -47,6 +56,41 @@ $ErrorActionPreference = "Stop"
 $csproj = Join-Path $MetaMorpheusRoot "MetaMorpheus/CMD/CMD.csproj"
 if (-not (Test-Path $csproj)) {
     throw "CMD.csproj not found at $csproj. Point -MetaMorpheusRoot at the MetaMorpheus checkout root."
+}
+
+# --- The pin ------------------------------------------------------------------
+# code/metamorpheus.pin holds the one copy of the commit this package projects.
+# Validate what we read, so a mangled pin fails naming itself rather than being
+# compared against and quietly mismatching everything.
+$pinFile = Join-Path $PSScriptRoot "../../code/metamorpheus.pin"
+if (-not (Test-Path $pinFile)) {
+    throw "Pin file not found at $pinFile. It holds the MetaMorpheus commit this package is built from."
+}
+$pin = (Get-Content -Raw $pinFile) -replace '\s', ''
+if ($pin -notmatch '^[0-9a-f]{40}$') {
+    throw "code/metamorpheus.pin must hold a full 40-character sha; got '$pin'."
+}
+
+# Compare it with what is actually checked out. A payload built from an unrecorded
+# commit is the failure this whole file exists to prevent: the wheel ships, the
+# record says something else, and nothing anywhere can tell you which is right.
+$head = (& git -C $MetaMorpheusRoot rev-parse HEAD 2>$null)
+if ($LASTEXITCODE -ne 0 -or -not $head) {
+    if (-not $IgnorePin) {
+        throw "Could not read HEAD from $MetaMorpheusRoot (is it a git checkout?). Pass -IgnorePin to stage anyway."
+    }
+    Write-Warning "Could not read HEAD from $MetaMorpheusRoot; -IgnorePin given, staging anyway."
+}
+elseif ($head.Trim() -ne $pin) {
+    $msg = "MetaMorpheusRoot is at $($head.Trim().Substring(0,8)) but code/metamorpheus.pin says $($pin.Substring(0,8))."
+    if (-not $IgnorePin) {
+        throw ("$msg`nCheck out the pinned commit, or bump the pin (see code/PINNED.md), " +
+               "or pass -IgnorePin for a payload you will not release.")
+    }
+    Write-Warning "$msg -IgnorePin given; this payload must not be released."
+}
+else {
+    Write-Host "Pin check: $MetaMorpheusRoot is at the pinned commit $($pin.Substring(0,8))."
 }
 
 # Destination inside the package (gitignored).
@@ -83,4 +127,4 @@ if (Test-Path $apphost -PathType Leaf) {
 
 $size = (Get-ChildItem -Recurse $dest | Measure-Object Length -Sum).Sum / 1MB
 Write-Host ("Staged payload: {0:N1} MB at {1}" -f $size, $dest)
-Write-Host "Done. (Remember: payload is gitignored; see code/PINNED.md for the pin.)"
+Write-Host "Done. (Payload is gitignored; the commit it was built from is code/metamorpheus.pin.)"

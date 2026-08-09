@@ -41,8 +41,18 @@ jobs:
   # Live canary — builds a self-contained MetaMorpheus CLI on Linux (no .NET
   # pre-installed beyond the SDK used to publish) and runs a real search through
   # the Python API, proving the round-trip end to end.
+  #
+  # It builds the commit in code/metamorpheus.pin, NOT master. Until 2026-08-09 this
+  # job ran `git clone --depth 1` of master, so the canary tested whatever MetaMorpheus
+  # happened to be that morning while the wheel projected a commit from July — green
+  # here said nothing about the build users would get, and a breaking upstream change
+  # would have reddened CI on an unrelated pull request with no clue why.
+  #
+  # Pinning also makes the bump loop mean something: upstream-watch.yml proposes a new
+  # pin as a pull request, this job runs against that pull request, and merging it is
+  # therefore backed by a real search having succeeded on the new build.
   live:
-    name: live (ubuntu, self-contained CLI)
+    name: live (ubuntu, self-contained CLI at the pin)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -52,9 +62,34 @@ jobs:
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: "8.0.x"
-      - name: Clone pinned MetaMorpheus
+      - name: Fetch MetaMorpheus at the pinned commit
         run: |
-          git clone --depth 1 https://github.com/smith-chem-wisc/MetaMorpheus.git mm
+          set -euo pipefail
+
+          # Validate before use, so a mangled pin fails naming itself instead of
+          # surfacing as an inscrutable git error four lines later.
+          pin=$(tr -d '[:space:]' < code/metamorpheus.pin)
+          if ! [[ "$pin" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "::error::code/metamorpheus.pin must hold a full 40-character sha; got '$pin'"
+            exit 1
+          fi
+          echo "pinned MetaMorpheus commit: $pin"
+
+          # `clone --depth 1` can only reach a branch tip, and the pin deliberately is
+          # not one (it sits 25 commits past 1.1.7 today, and after any bump it is a
+          # release commit that master has already moved past). Fetching the sha
+          # directly is shallow AND exact; GitHub allows it, verified 2026-08-09.
+          mkdir mm && cd mm
+          git init -q
+          git remote add origin https://github.com/smith-chem-wisc/MetaMorpheus.git
+          git fetch -q --depth 1 origin "$pin"
+          git checkout -q FETCH_HEAD
+
+          got=$(git rev-parse HEAD)
+          if [ "$got" != "$pin" ]; then
+            echo "::error::checked out $got but the pin is $pin"
+            exit 1
+          fi
       - name: Publish self-contained CLI (linux-x64)
         shell: pwsh
         run: |
