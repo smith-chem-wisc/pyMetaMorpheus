@@ -96,3 +96,131 @@ jobs:
 
           print("version has exactly one source:", path)
           PY
+
+  # The full CI matrix, called rather than restated: four operating systems, three Pythons, plus
+  # the live canary that builds a self-contained MetaMorpheus CLI from code/metamorpheus.pin and
+  # runs a real search through it. Nothing is built for release until that has passed on the exact
+  # commit being tagged.
+  ci:
+    name: ci
+    needs: tag-matches-version
+    if: startsWith(github.ref, 'refs/tags/v')
+    uses: ./.github/workflows/ci.yml
+
+  build:
+    name: build the wheel
+    needs: [tag-matches-version, ci]
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Build
+        working-directory: pkg/python
+        run: |
+          set -euo pipefail
+          python -m pip install --quiet build
+          python -m build --wheel --outdir dist .
+          ls -lh dist
+
+      # A wheel whose name does not match the tag would mean the gate above passed and something
+      # downstream still produced the wrong thing. Cheap to check, and it checks the actual
+      # artefact rather than the intent.
+      - name: The built filename must carry the tagged version
+        working-directory: pkg/python
+        run: |
+          set -euo pipefail
+          want="${GITHUB_REF#refs/tags/v}"
+          if ! ls dist/pymetamorpheus-"$want"-*.whl >/dev/null 2>&1; then
+            echo "::error::no wheel named for version $want; built: $(ls dist)"
+            exit 1
+          fi
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: wheel
+          path: pkg/python/dist/*.whl
+          if-no-files-found: error
+
+  # No PYPI_PUBLISH gate here, deliberately. While the package is not on PyPI the GitHub Release is
+  # the only way to get a build, so it must run on every v* tag. The sibling project shipped a
+  # release page advertising wheels that were never uploaded, because attaching them was a manual
+  # step — and manual steps get skipped.
+  github-release:
+    name: attach the wheel to the GitHub Release
+    needs: [tag-matches-version, ci, build]
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: wheel
+          path: dist
+
+      - name: List what will be attached
+        run: ls -lh dist
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: dist/*.whl
+          # A tag with no matching wheel means an upstream job silently produced nothing. Fail
+          # loudly rather than succeed with an empty release page.
+          fail_on_unmatched_files: true
+          # Keep dev previews out of "Latest".
+          prerelease: ${{ contains(github.ref_name, 'dev') || contains(github.ref_name, 'rc') || contains(github.ref_name, 'alpha') || contains(github.ref_name, 'beta') }}
+
+  # Publish via Trusted Publishing — no stored API token; PyPI verifies this workflow's OIDC
+  # identity instead.
+  #
+  # Two gates, both required. The tag gate is obvious. The PYPI_PUBLISH repository-variable gate is
+  # a safety switch, because PyPI cannot accept an upload from this project yet and would not be
+  # able to even if the plumbing were perfect:
+  #
+  #   1. No Trusted Publisher is registered for this workflow on PyPI (a one-time manual step).
+  #   2. pyproject.toml's [pymzlib] extra is a direct git reference, and PyPI rejects any
+  #      distribution whose metadata carries one. That reference is itself provisional — it exists
+  #      because pyMzLib is not on PyPI and an unrelated package already holds the name `pymzlib`.
+  #   3. The shipping model for the MetaMorpheus CLI payload is still open (gap G-dist). A wheel
+  #      built here today carries NO CLI: it installs fine and then needs PYMM_METAMORPHEUS or a
+  #      locally staged payload to do anything. That is fine for a rehearsal on a dev tag and is
+  #      not something to put on a public index.
+  #
+  # So a v* tag builds, tests and rehearses everything; it just does not ship. Turn shipping on by
+  # setting the repository variable PYPI_PUBLISH=true (Settings -> Secrets and variables ->
+  # Actions -> Variables) once the three items above are resolved.
+  pypi:
+    name: publish to PyPI
+    needs: [tag-matches-version, ci, build]
+    if: startsWith(github.ref, 'refs/tags/v') && vars.PYPI_PUBLISH == 'true'
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: https://pypi.org/p/pymetamorpheus
+    permissions:
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: wheel
+          path: dist
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Check the artifacts before anything is published
+        run: |
+          set -euo pipefail
+          pip install --quiet twine
+          ls -lh dist
+          twine check --strict dist/*.whl
+
+      - uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: dist
+          skip-existing: false
