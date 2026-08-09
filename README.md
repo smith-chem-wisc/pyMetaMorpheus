@@ -43,14 +43,32 @@ result = mm.search(
 print(result.search.all_psms)   # -> out/Task1SearchTask/AllPSMs.psmtsv
 ```
 
-### The four task types
+## What it can do
+
+| capability | call | notes |
+|---|---|---|
+| calibration | `mm.calibrate(...)` | → `*-calib.mzML` |
+| GPTMD | `mm.gptmd(...)` | → `*GPTMD.xml`, a PTM-augmented database |
+| peptide/protein search | `mm.search(...)` | → `AllPSMs.psmtsv`, `AllPeptides.psmtsv`, … |
+| glyco search | `mm.glyco_search(..., glyco_search_type="NGlycanSearch")` | N- and O-glycan |
+| cross-link search | `mm.xl_search(...)` | XLSearchTask |
+| multi-task pipeline | `mm.pipeline([...])` | several tasks, **one** CLI invocation |
+| label-free quantification | `quantify=True` on `search` | FlashLFQ, part of the search task and **on by default** |
+| spectral library generation | `write_spectral_library=True` on `search` | off by default; `update_spectral_library=` extends one |
+| run a hand-written TOML | `mm.run_toml(...)` | anything the exposed surface does not reach |
+| discover every parameter | `mm.available_parameters("Search")` | what MetaMorpheus itself offers for a task type |
 
 ```python
 mm.calibrate(spectra, database, "out")       # -> *-calib.mzML
 mm.gptmd(spectra, database, "out")           # -> *GPTMD.xml (PTM-augmented DB)
 mm.search(spectra, database, "out")          # -> AllPSMs.psmtsv, AllPeptides.psmtsv, ...
 mm.glyco_search(spectra, database, "out", glyco_search_type="NGlycanSearch")
+mm.xl_search(spectra, database, "out")       # -> cross-linked PSMs
 ```
+
+If a knob is not in the table, `mm.available_parameters()` will tell you what MetaMorpheus calls it
+and `mm.run_toml()` will run it — see
+[Full parameter access](https://smith-chem-wisc.github.io/pyMetaMorpheus/guides/full-access/).
 
 ### The canonical pipeline (calibrate → GPTMD → search)
 
@@ -70,8 +88,9 @@ for task in result.tasks:
 
 - **Input is `.mzML` only** for now. `.raw` support is deferred until the Thermo license can be
   accepted non-interactively. Convert `.raw` with MSConvert, or export `.mzML` from your instrument.
-- The exposed parameter surface is intentionally small (the knobs reached for first). Everything else
-  keeps MetaMorpheus's own defaults; the surface widens on demand, not speculatively.
+- The named parameters on each verb are a curated subset — the knobs reached for first. Everything
+  else keeps MetaMorpheus's own defaults, and is still reachable through `mm.available_parameters()`
+  and `mm.run_toml()`, so nothing is locked away.
 
 ## Locating the CLI
 

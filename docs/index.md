@@ -39,10 +39,29 @@ work-around.
 
 - **Zero third-party Python runtime dependencies.** The wheel carries (or fetches) a self-contained
   MetaMorpheus CLI. No .NET install, no version handshake.
-- **Every task type is the same code path.** `calibrate`, `gptmd`, `search`, `glyco_search`, and
-  multi-task `pipeline` differ only in which TOML gets patched.
+- **Every task type is the same code path.** `calibrate`, `gptmd`, `search`, `glyco_search`,
+  `xl_search` and multi-task `pipeline` differ only in which TOML gets patched.
 - **Outputs are standard mzLib result files** (TSV / mzID). For parsed tables, compose with
   [pyMzLib](https://github.com/smith-chem-wisc/pyMzLib)'s readers — don't re-parse.
+
+## What it can do
+
+| capability | call | notes |
+|---|---|---|
+| calibration | `mm.calibrate(...)` | → `*-calib.mzML` |
+| GPTMD | `mm.gptmd(...)` | → `*GPTMD.xml`, a PTM-augmented database |
+| peptide/protein search | `mm.search(...)` | → `AllPSMs.psmtsv`, `AllPeptides.psmtsv`, … |
+| glyco search | `mm.glyco_search(...)` | N- and O-glycan |
+| cross-link search | `mm.xl_search(...)` | XLSearchTask |
+| multi-task pipeline | `mm.pipeline([...])` | several tasks, **one** CLI invocation |
+| label-free quantification | `quantify=True` on `search` | FlashLFQ, part of the search task and **on by default** |
+| spectral library generation | `write_spectral_library=True` on `search` | off by default; `update_spectral_library=` extends one |
+| run a hand-written TOML | `mm.run_toml(...)` | anything the exposed surface does not reach |
+| discover every parameter | `mm.available_parameters("Search")` | what MetaMorpheus itself offers for a task type |
+
+The last two rows matter more than their size suggests: the named arguments on each verb are a
+curated subset, and those two calls are how you reach everything else without leaving Python. See
+[Full parameter access](guides/full-access.md).
 
 ## Next
 
