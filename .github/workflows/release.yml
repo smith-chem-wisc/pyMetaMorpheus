@@ -1,0 +1,98 @@
+# What a tag is allowed to mean.
+#
+# This file starts with one job: proving the tag being released and the version the package
+# declares are the same string. Building and attaching the artefacts comes next, and hangs off
+# this job — so a typo in a tag costs seconds instead of producing a mislabelled artefact.
+#
+# Why that is worth a whole job: cutting `v0.1.0.dev4` on the sibling project while the package
+# still said `dev3` would have built wheels named `dev3`, attached them to a release page headed
+# `dev4`, and gone entirely green. Nothing in the pipeline compares those two strings unless
+# something is written to compare them. PyPI never lets a version number be reused, so the
+# resulting artefact can only be yanked and superseded, never corrected.
+
+name: release
+
+on:
+  push:
+    tags: ["v*"]
+  # Dispatch is deliberately allowed. GitHub lets you dispatch against a tag as well as a branch,
+  # so this job is reachable that way; dispatched from a branch it simply skips, because there is
+  # no tag to check.
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  tag-matches-version:
+    name: tag matches the declared version
+    # No `needs:`. This is the cheapest thing in the pipeline and the most expensive to get wrong,
+    # so it runs first and alone.
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Compare the tag with the package's version
+        working-directory: pkg/python
+        run: |
+          set -euo pipefail
+
+          tag="${GITHUB_REF#refs/tags/}"
+          want="${tag#v}"
+
+          # Read __version__ without importing the package: an import would execute __init__.py,
+          # which imports the whole API surface, so an unrelated breakage would surface here as a
+          # confusing version failure.
+          got=$(python - <<'PY'
+          import pathlib, re, sys
+          text = pathlib.Path("src/pymetamorpheus/__init__.py").read_text(encoding="utf-8")
+          m = re.search(r'^__version__\s*=\s*["\']([^"\']+)["\']', text, re.M)
+          if not m:
+              sys.exit("no __version__ assignment found in src/pymetamorpheus/__init__.py")
+          print(m.group(1))
+          PY
+          )
+
+          echo "tag:              $tag"
+          echo "tag minus 'v':    $want"
+          echo "__version__:      $got"
+
+          if [ "$want" != "$got" ]; then
+            echo "::error::tag $tag declares version '$want' but the package says '$got'. Bump src/pymetamorpheus/__init__.py, or retag."
+            exit 1
+          fi
+
+      - name: The version must still have exactly one source
+        working-directory: pkg/python
+        run: |
+          set -euo pipefail
+
+          # pyproject.toml derives the version from __init__.py. If someone reintroduces a static
+          # `version = "..."` under [project], hatchling errors at build time — but that failure
+          # appears late, inside a build log, wearing a packaging error's clothes. Say it here
+          # instead, where the message can name what actually went wrong.
+          python - <<'PY'
+          import sys, tomllib, pathlib
+
+          cfg = tomllib.loads(pathlib.Path("pyproject.toml").read_text(encoding="utf-8"))
+          project = cfg["project"]
+
+          if "version" in project:
+              sys.exit(
+                  "pyproject.toml declares a static [project] version again. The version has one "
+                  "home: __version__ in src/pymetamorpheus/__init__.py. Two copies is how a release "
+                  "ends up named one thing and labelled another."
+              )
+          if "version" not in project.get("dynamic", []):
+              sys.exit("pyproject.toml must list 'version' in [project] dynamic.")
+
+          path = cfg["tool"]["hatch"]["version"]["path"]
+          if path != "src/pymetamorpheus/__init__.py":
+              sys.exit(f"[tool.hatch.version] path points at {path}, not the package's __init__.py.")
+
+          print("version has exactly one source:", path)
+          PY

@@ -4,7 +4,13 @@ build-backend = "hatchling.build"
 
 [project]
 name = "pymetamorpheus"
-version = "0.0.1"
+# The version is NOT written here. It is read from src/pymetamorpheus/__init__.py
+# (see [tool.hatch.version] below), so the value exists exactly once and cannot
+# disagree with itself. It used to be declared in both places: two strings that
+# a release could set half of, producing a wheel named one thing and attached to
+# a release page headed another, entirely green. PyPI never lets a version be
+# reused, so that mistake can only be yanked and superseded, never corrected.
+dynamic = ["version"]
 description = "MetaMorpheus, callable from Python — a dependency-free, faithful projection of the MetaMorpheus CLI."
 readme = "README.md"
 requires-python = ">=3.9"
@@ -51,6 +57,12 @@ Source = "https://github.com/smith-chem-wisc/pyMetaMorpheus"
 # of ANY extra fails. Provisional: drop the direct ref (and this flag) once
 # pyMzLib is on PyPI (gap G-dist).
 allow-direct-references = true
+
+[tool.hatch.version]
+# The single source of the version. `__version__` in the package is the value a
+# user can actually read at runtime, so it is the one that must be true; the
+# distribution metadata is derived from it rather than maintained beside it.
+path = "src/pymetamorpheus/__init__.py"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/pymetamorpheus"]
