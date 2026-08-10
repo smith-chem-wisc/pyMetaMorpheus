@@ -636,7 +636,57 @@
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="[Unreleased]">
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#002dev0" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [0.0.2.dev0]
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="[0.0.2.dev0]">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#added-release-and-upstream-automation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Added — release and upstream automation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#fixed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fixed
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#001" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [0.0.1]
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="[0.0.1]">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -651,7 +701,7 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#fixed" class="md-nav__link">
+  <a href="#fixed_1" class="md-nav__link">
     <span class="md-ellipsis">
       
         Fixed
@@ -731,7 +781,57 @@
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="[Unreleased]">
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#002dev0" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [0.0.2.dev0]
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="[0.0.2.dev0]">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#added-release-and-upstream-automation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Added — release and upstream automation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#fixed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fixed
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#001" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [0.0.1]
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="[0.0.1]">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -746,7 +846,7 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#fixed" class="md-nav__link">
+  <a href="#fixed_1" class="md-nav__link">
     <span class="md-ellipsis">
       
         Fixed
@@ -807,6 +907,38 @@
 <p>All notable changes to pyMetaMorpheus are recorded here. Format loosely follows
 <a href="https://keepachangelog.com/">Keep a Changelog</a>; versions follow semver.</p>
 <h2 id="unreleased">[Unreleased]</h2>
+<h2 id="002dev0">[0.0.2.dev0]</h2>
+<p>The first tag this project has ever cut, and deliberately a dev preview: its purpose is to exercise
+the release path end to end rather than to ship anything. <code>PYPI_PUBLISH</code> is unset, so it builds,
+tests and attaches a wheel to a GitHub prerelease and touches no public index.</p>
+<h3 id="added-release-and-upstream-automation">Added — release and upstream automation</h3>
+<ul>
+<li><strong>The MetaMorpheus pin is machine-readable.</strong> <code>code/metamorpheus.pin</code> holds the commit, one copy;
+  <code>publish-runner.ps1</code> refuses a checkout that is at a different commit, and CI fetches exactly that
+  commit.</li>
+<li><strong><code>upstream-watch.yml</code></strong> — weekly, opens a pull request bumping the pin when MetaMorpheus cuts a
+  release that is genuinely <em>ahead</em> of it. Never pushes: the bump PR runs the live canary, which is
+  what makes the bump trustworthy.</li>
+<li><strong><code>release.yml</code></strong> — a <code>v*</code> tag checks the tag against the declared version, runs the whole CI
+  matrix (called, not duplicated), builds the wheel and attaches it to the GitHub Release. PyPI
+  publishing is wired behind the <code>PYPI_PUBLISH</code> repository variable and switched off.</li>
+<li><strong>One version source</strong> — <code>__version__</code> in <code>__init__.py</code>, with hatchling deriving the distribution
+  metadata from it.</li>
+<li><strong>A test that keeps the READMEs honest</strong> — every capability in <code>__all__</code> must appear on the repo
+  README, the PyPI README and the docs landing page.</li>
+</ul>
+<h3 id="fixed">Fixed</h3>
+<ul>
+<li><strong>CI's live canary was building MetaMorpheus <code>master</code>, not the pin.</strong> The wheel projected a July
+  commit while the canary tested whatever upstream happened to be that morning, so a green tick said
+  nothing about the build users would actually get.</li>
+<li><strong>Five capabilities were missing from every page a stranger reads first</strong> — <code>xl_search</code>,
+  <code>run_toml</code>, <code>available_parameters</code>, label-free quantification and spectral-library generation were
+  documented in the guides and absent from all three landing surfaces.</li>
+<li><strong>A stale caveat below claimed cross-link search was not exposed</strong>, three bullets under the entry
+  announcing that it was.</li>
+</ul>
+<h2 id="001">[0.0.1]</h2>
 <h3 id="added">Added</h3>
 <ul>
 <li><strong>Classic search vignette</strong> — <code>search(spectra, database, output_dir, ...)</code> runs a MetaMorpheus
@@ -827,7 +959,7 @@
 <li><strong>Cross-link search exposed</strong> — <code>xl_search()</code> / <code>make_xl_search_task()</code> (<code>XLSearchTask</code>), completing
   coverage of all five task types MetaMorpheus generates.</li>
 </ul>
-<h3 id="fixed">Fixed</h3>
+<h3 id="fixed_1">Fixed</h3>
 <ul>
 <li><strong>CI/packaging</strong>: <code>pkg/build/publish-runner.ps1</code> was being swallowed by a too-broad <code>build/</code>
   gitignore rule (now anchored to <code>pkg/python/build/</code>), which broke the live CI job. Enabled
@@ -885,7 +1017,7 @@
   human PRIDE data (PXD008952) fetched via pyMzLib</strong> against UniProt human Swiss-Prot (15,796 PSMs).</li>
 <li>Results are standard mzLib files — parse them by composing with pyMzLib, not by re-parsing here.</li>
 <li>Known limitations (by design): <code>.mzML</code> only (<code>.raw</code> deferred, G-settings); no progress streaming
-  during long runs; cross-link search (<code>XLSearchTask</code>) not yet exposed.</li>
+  during long runs.</li>
 </ul>
 
 
