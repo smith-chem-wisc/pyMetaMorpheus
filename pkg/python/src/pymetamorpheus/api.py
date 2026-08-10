@@ -411,7 +411,12 @@ def available_parameters(task_type: str = "Search") -> dict[str | None, dict[str
     Generates the task's default config with ``CMD -g`` and parses it, so what you
     see is exactly what ``params`` can override (same single-line ``key = value``
     model). ``task_type`` is one of ``"Search"``, ``"Calibration"``, ``"Gptmd"``,
-    ``"GlycoSearch"``, ``"XLSearch"``, ``"Averaging"``.
+    ``"GlycoSearch"``, ``"XLSearch"``.
+
+    Not ``"Averaging"``: ``CMD -g`` writes no ``AveragingTask.toml``, so there are
+    no defaults to report and this call would raise. Spectral averaging still runs
+    today via :func:`run_toml` with a hand-written config — see ``UPSTREAM.md``
+    (U1), which tracks the fix landing in MetaMorpheus itself.
 
     Example::
 

@@ -61,9 +61,13 @@ class Task:
     @property
     def toml_filename(self) -> str:
         """The default-TOML basename MetaMorpheus emits for this task."""
-        # `CMD -g` writes CalibrationTask.toml, GptmdTask.toml, SearchTask.toml,
-        # GlycoSearchTask.toml, AveragingTask.toml, XLSearchTask.toml. task_type
-        # already carries the right stem.
+        # `CMD -g` writes five files: CalibrationTask.toml, GptmdTask.toml,
+        # SearchTask.toml, XLSearchTask.toml, GlycoSearchTask.toml. NOT
+        # AveragingTask.toml - averaging is the one MyTask member the generator
+        # skips, which is why there is no average() verb yet (UPSTREAM.md, U1).
+        # task_type carries the STEM, not the TaskType value: the two differ for
+        # Calibrate/Calibration and Average/Averaging, and the stem is what both
+        # the filename and the output folder use.
         return f"{self.task_type}Task.toml"
 
 
