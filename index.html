@@ -342,6 +342,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#what-it-can-do" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What it can do
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#next" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -717,6 +728,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#what-it-can-do" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What it can do
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#next" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -781,11 +803,76 @@ work-around.</p>
 <ul>
 <li><strong>Zero third-party Python runtime dependencies.</strong> The wheel carries (or fetches) a self-contained
   MetaMorpheus CLI. No .NET install, no version handshake.</li>
-<li><strong>Every task type is the same code path.</strong> <code>calibrate</code>, <code>gptmd</code>, <code>search</code>, <code>glyco_search</code>, and
-  multi-task <code>pipeline</code> differ only in which TOML gets patched.</li>
+<li><strong>Every task type is the same code path.</strong> <code>calibrate</code>, <code>gptmd</code>, <code>search</code>, <code>glyco_search</code>,
+  <code>xl_search</code> and multi-task <code>pipeline</code> differ only in which TOML gets patched.</li>
 <li><strong>Outputs are standard mzLib result files</strong> (TSV / mzID). For parsed tables, compose with
   <a href="https://github.com/smith-chem-wisc/pyMzLib">pyMzLib</a>'s readers — don't re-parse.</li>
 </ul>
+<h2 id="what-it-can-do">What it can do</h2>
+<table>
+<thead>
+<tr>
+<th>capability</th>
+<th>call</th>
+<th>notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>calibration</td>
+<td><code>mm.calibrate(...)</code></td>
+<td>→ <code>*-calib.mzML</code></td>
+</tr>
+<tr>
+<td>GPTMD</td>
+<td><code>mm.gptmd(...)</code></td>
+<td>→ <code>*GPTMD.xml</code>, a PTM-augmented database</td>
+</tr>
+<tr>
+<td>peptide/protein search</td>
+<td><code>mm.search(...)</code></td>
+<td>→ <code>AllPSMs.psmtsv</code>, <code>AllPeptides.psmtsv</code>, …</td>
+</tr>
+<tr>
+<td>glyco search</td>
+<td><code>mm.glyco_search(...)</code></td>
+<td>N- and O-glycan</td>
+</tr>
+<tr>
+<td>cross-link search</td>
+<td><code>mm.xl_search(...)</code></td>
+<td>XLSearchTask</td>
+</tr>
+<tr>
+<td>multi-task pipeline</td>
+<td><code>mm.pipeline([...])</code></td>
+<td>several tasks, <strong>one</strong> CLI invocation</td>
+</tr>
+<tr>
+<td>label-free quantification</td>
+<td><code>quantify=True</code> on <code>search</code></td>
+<td>FlashLFQ, part of the search task and <strong>on by default</strong></td>
+</tr>
+<tr>
+<td>spectral library generation</td>
+<td><code>write_spectral_library=True</code> on <code>search</code></td>
+<td>off by default; <code>update_spectral_library=</code> extends one</td>
+</tr>
+<tr>
+<td>run a hand-written TOML</td>
+<td><code>mm.run_toml(...)</code></td>
+<td>anything the exposed surface does not reach</td>
+</tr>
+<tr>
+<td>discover every parameter</td>
+<td><code>mm.available_parameters("Search")</code></td>
+<td>what MetaMorpheus itself offers for a task type</td>
+</tr>
+</tbody>
+</table>
+<p>The last two rows matter more than their size suggests: the named arguments on each verb are a
+curated subset, and those two calls are how you reach everything else without leaving Python. See
+<a href="guides/full-access/">Full parameter access</a>.</p>
 <h2 id="next">Next</h2>
 <ul>
 <li><strong><a href="guides/getting-started/">Getting started</a></strong> — zero to your first identified peptides.</li>
