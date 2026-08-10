@@ -5,6 +5,39 @@ All notable changes to pyMetaMorpheus are recorded here. Format loosely follows
 
 ## [Unreleased]
 
+## [0.0.2.dev0]
+
+The first tag this project has ever cut, and deliberately a dev preview: its purpose is to exercise
+the release path end to end rather than to ship anything. `PYPI_PUBLISH` is unset, so it builds,
+tests and attaches a wheel to a GitHub prerelease and touches no public index.
+
+### Added — release and upstream automation
+- **The MetaMorpheus pin is machine-readable.** `code/metamorpheus.pin` holds the commit, one copy;
+  `publish-runner.ps1` refuses a checkout that is at a different commit, and CI fetches exactly that
+  commit.
+- **`upstream-watch.yml`** — weekly, opens a pull request bumping the pin when MetaMorpheus cuts a
+  release that is genuinely *ahead* of it. Never pushes: the bump PR runs the live canary, which is
+  what makes the bump trustworthy.
+- **`release.yml`** — a `v*` tag checks the tag against the declared version, runs the whole CI
+  matrix (called, not duplicated), builds the wheel and attaches it to the GitHub Release. PyPI
+  publishing is wired behind the `PYPI_PUBLISH` repository variable and switched off.
+- **One version source** — `__version__` in `__init__.py`, with hatchling deriving the distribution
+  metadata from it.
+- **A test that keeps the READMEs honest** — every capability in `__all__` must appear on the repo
+  README, the PyPI README and the docs landing page.
+
+### Fixed
+- **CI's live canary was building MetaMorpheus `master`, not the pin.** The wheel projected a July
+  commit while the canary tested whatever upstream happened to be that morning, so a green tick said
+  nothing about the build users would actually get.
+- **Five capabilities were missing from every page a stranger reads first** — `xl_search`,
+  `run_toml`, `available_parameters`, label-free quantification and spectral-library generation were
+  documented in the guides and absent from all three landing surfaces.
+- **A stale caveat below claimed cross-link search was not exposed**, three bullets under the entry
+  announcing that it was.
+
+## [0.0.1]
+
 ### Added
 - **Classic search vignette** — `search(spectra, database, output_dir, ...)` runs a MetaMorpheus
   classic search and returns a typed `RunResult` (`result.search.all_psms`, etc.).
@@ -79,4 +112,4 @@ All notable changes to pyMetaMorpheus are recorded here. Format loosely follows
   human PRIDE data (PXD008952) fetched via pyMzLib** against UniProt human Swiss-Prot (15,796 PSMs).
 - Results are standard mzLib files — parse them by composing with pyMzLib, not by re-parsing here.
 - Known limitations (by design): `.mzML` only (`.raw` deferred, G-settings); no progress streaming
-  during long runs; cross-link search (`XLSearchTask`) not yet exposed.
+  during long runs.
