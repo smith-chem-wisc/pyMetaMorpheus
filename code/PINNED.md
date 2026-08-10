@@ -31,14 +31,25 @@ today, read `code/metamorpheus.pin`; to ask how it relates to upstream today, ru
 ## Grounding facts captured from the build
 
 Read off the initial pin of 2026-07-28 (*"MetaDraw Update: m/z restrictions, diagnostic
-refragmentation, and Glyco Refragmentation (#2694)"*) by running it, not from documentation. They are
-what the TOML writer and the result-path logic encode:
+refragmentation, and Glyco Refragmentation (#2694)"*), and each one re-derived from that exact
+checkout on 2026-08-09. They are what the TOML writer and the result-path logic encode:
 
 - CLI executable (dev): `MetaMorpheus\CMD\bin\Debug\net8.0\CMD.exe`
-- `CMD -g` generates: `CalibrationTask.toml`, `GptmdTask.toml`, `SearchTask.toml`,
-  `GlycoSearchTask.toml`, `AveragingTask.toml`, `XLSearchTask.toml`.
-- Task TaskType values: `Calibrate` / `Gptmd` / `Search` / `GlycoSearch` (the TOML *filenames* use the
-  `CalibrationTask` / `GptmdTask` / `SearchTask` / `GlycoSearchTask` stems).
+- `CMD -g` generates **five** files — `CalibrationTask.toml`, `GptmdTask.toml`, `SearchTask.toml`,
+  `XLSearchTask.toml`, `GlycoSearchTask.toml` (`MetaMorpheus/CMD/CommandLineSettings.cs` →
+  `GenerateDefaultTaskTomls`; cited by path rather than by permalink, so this line does not become a
+  second place the pinned sha is written down).
+  **There is no `AveragingTask.toml`** — averaging is the one `MyTask` member the generator skips.
+  This entry claimed otherwise until 2026-08-09; the claim was inherited rather than re-derived, and
+  a code review caught it. See `UPSTREAM.md` **U1**: the omission is a mainland gap, being fixed
+  there rather than worked around here.
+- Two different names per task, and confusing them is the trap. The `TaskType` **value** written
+  inside a TOML is the `MyTask` enum — six members: `Search` / `Gptmd` / `Calibrate` / `XLSearch` /
+  `GlycoSearch` / `Average`. The **stem** used for both the `-g` filename and the output folder is
+  `Search` / `Gptmd` / `Calibration` / `XLSearch` / `GlycoSearch` / `Averaging`. They differ for
+  exactly two members: `Calibrate`→`Calibration` and `Average`→`Averaging`. This package keys on the
+  **stem** (`Task.task_type`), which is why `f"{stem}Task"` correctly yields both
+  `CalibrationTask.toml` and the `Task1AveragingTask/` folder.
 - Output folders: `Task<N><TaskType>Task/` (e.g. `Task1SearchTask/`, `Task2GptmdTask/`).
 - Glyco params live in the `[_glycoSearchParameters]` section (`GlycoSearchType`, glycan DBs).
 - Common params + `[CommonParameters.DigestionParams]` (`Protease` and `SpecificProtease` both set).
