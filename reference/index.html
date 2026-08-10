@@ -1945,7 +1945,11 @@ passthrough can't express. Equivalent to <code>pipeline([task_from_toml(t) ...])
 <p>Generates the task's default config with <code>CMD -g</code> and parses it, so what you
 see is exactly what <code>params</code> can override (same single-line <code>key = value</code>
 model). <code>task_type</code> is one of <code>"Search"</code>, <code>"Calibration"</code>, <code>"Gptmd"</code>,
-<code>"GlycoSearch"</code>, <code>"XLSearch"</code>, <code>"Averaging"</code>.</p>
+<code>"GlycoSearch"</code>, <code>"XLSearch"</code>.</p>
+<p>Not <code>"Averaging"</code>: <code>CMD -g</code> writes no <code>AveragingTask.toml</code>, so there are
+no defaults to report and this call would raise. Spectral averaging still runs
+today via :func:<code>run_toml</code> with a hand-written config — see <code>UPSTREAM.md</code>
+(U1), which tracks the fix landing in MetaMorpheus itself.</p>
 <p>Example::</p>
 <div class="highlight"><pre><span></span><code>params = pymetamorpheus.available_parameters(&quot;Search&quot;)
 params[&quot;SearchParameters&quot;][&quot;DoParsimony&quot;]       # -&gt; &quot;true&quot;
