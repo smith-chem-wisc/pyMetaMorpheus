@@ -1950,11 +1950,17 @@ model). <code>task_type</code> is one of <code>"Search"</code>, <code>"Calibrati
 no defaults to report and this call would raise. Spectral averaging still runs
 today via :func:<code>run_toml</code> with a hand-written config — see <code>UPSTREAM.md</code>
 (U1), which tracks the fix landing in MetaMorpheus itself.</p>
+<p>Values are Python objects — <code>True</code>, <code>0.01</code>, <code>"Reverse"</code>, <code>["FullySpecific"]</code>
+— so the dict can be edited and passed straight back as <code>params</code>. It used to
+report the raw TOML text, which made that round trip re-quote every value it had
+not touched (<code>false</code> became the string <code>"false"</code>, and <code>TaskType</code> became
+<code>'"Search"'</code>, which MetaMorpheus does not recognise as a task type).</p>
 <p>Example::</p>
 <div class="highlight"><pre><span></span><code>params = pymetamorpheus.available_parameters(&quot;Search&quot;)
-params[&quot;SearchParameters&quot;][&quot;DoParsimony&quot;]       # -&gt; &quot;true&quot;
-# then override any of them:
-mm.search(..., params={&quot;SearchParameters&quot;: {&quot;DoParsimony&quot;: False}})
+params[&quot;SearchParameters&quot;][&quot;DoParsimony&quot;]       # -&gt; True
+# edit and hand the whole thing back, or just the keys you changed:
+params[&quot;SearchParameters&quot;][&quot;DoParsimony&quot;] = False
+mm.search(..., params=params)
 </code></pre></div>
 
 
@@ -2385,7 +2391,13 @@ result folders in run order. The raw process output is kept for diagnostics.</p>
 
     <div class="doc doc-contents ">
 
-        <p><code>AllQuantifiedProteinGroups.tsv</code> — protein groups (Search + LFQ).</p>
+        <p>Protein groups (Search).</p>
+<p>MetaMorpheus names this file by whether quantification ran:
+<code>AllQuantifiedProteinGroups.tsv</code> with label-free quantification on (the
+default), plain <code>AllProteinGroups.tsv</code> with it off — which is exactly
+what <code>search(..., quantify=False)</code> produces. Looking only for the
+quantified name returned <code>None</code> for those runs, which reads as "no
+protein groups were identified" rather than "look under the other name".</p>
 
     </div>
 
@@ -2409,7 +2421,10 @@ result folders in run order. The raw process output is kept for diagnostics.</p>
 
     <div class="doc doc-contents ">
 
-        <p>Alias for :attr:<code>all_proteins</code> — FlashLFQ protein-group intensities.</p>
+        <p>FlashLFQ protein-group intensities (Search + LFQ).</p>
+<p>Unlike :attr:<code>all_proteins</code> this does <strong>not</strong> fall back to the unquantified
+file: asking for quantified proteins when quantification did not run has no
+answer, and <code>None</code> is the honest one.</p>
 
     </div>
 

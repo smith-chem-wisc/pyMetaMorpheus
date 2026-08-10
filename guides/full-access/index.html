@@ -840,8 +840,12 @@ ignored.</p>
 default_value}}</code>, so you can see exactly what <code>params</code> accepts:</p>
 <div class="highlight"><pre><span></span><code><span class="n">ap</span> <span class="o">=</span> <span class="n">mm</span><span class="o">.</span><span class="n">available_parameters</span><span class="p">(</span><span class="s2">&quot;Search&quot;</span><span class="p">)</span>     <span class="c1"># or &quot;Calibration&quot;/&quot;Gptmd&quot;/&quot;GlycoSearch&quot;/&quot;XLSearch&quot;</span>
 <span class="nb">sum</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">ap</span><span class="o">.</span><span class="n">values</span><span class="p">())</span>           <span class="c1"># ~112 settings for Search</span>
-<span class="n">ap</span><span class="p">[</span><span class="s2">&quot;SearchParameters&quot;</span><span class="p">][</span><span class="s2">&quot;DoParsimony&quot;</span><span class="p">]</span>      <span class="c1"># &quot;true&quot;</span>
+<span class="n">ap</span><span class="p">[</span><span class="s2">&quot;SearchParameters&quot;</span><span class="p">][</span><span class="s2">&quot;DoParsimony&quot;</span><span class="p">]</span>      <span class="c1"># True  (a Python value, not TOML text)</span>
 <span class="nb">list</span><span class="p">(</span><span class="n">ap</span><span class="p">)</span>                                    <span class="c1"># every section header</span>
+</code></pre></div>
+<p>Values come back as Python objects, so you can edit the dict and hand the whole thing back:</p>
+<div class="highlight"><pre><span></span><code><span class="n">ap</span><span class="p">[</span><span class="s2">&quot;SearchParameters&quot;</span><span class="p">][</span><span class="s2">&quot;DoParsimony&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span>
+<span class="n">mm</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">spectra</span><span class="p">,</span> <span class="n">database</span><span class="p">,</span> <span class="s2">&quot;out&quot;</span><span class="p">,</span> <span class="n">params</span><span class="o">=</span><span class="n">ap</span><span class="p">)</span>
 </code></pre></div>
 <h2 id="3-run_toml-bring-your-own-complete-config">3. <code>run_toml()</code> — bring your own complete config</h2>
 <p>For anything the single-line patcher can't express — multi-line arrays, nested tables, a config you
