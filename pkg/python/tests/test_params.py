@@ -64,6 +64,9 @@ def test_read_sections(tmp_path):
         encoding="utf-8",
     )
     s = read_sections(p)
-    assert s[None]["TaskType"] == '"Search"'
-    assert s["CommonParameters"]["MaxThreadsToUsePerFile"] == "63"
-    assert s["CommonParameters.DigestionParams"]["Protease"] == '"trypsin"'
+    # Python values, not raw TOML text: the dict this returns is meant to be
+    # edited and handed straight back as `params`, and raw text made that round
+    # trip re-quote everything it had not touched.
+    assert s[None]["TaskType"] == "Search"
+    assert s["CommonParameters"]["MaxThreadsToUsePerFile"] == 63
+    assert s["CommonParameters.DigestionParams"]["Protease"] == "trypsin"

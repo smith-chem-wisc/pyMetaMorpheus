@@ -44,8 +44,15 @@ default_value}}`, so you can see exactly what `params` accepts:
 ```python
 ap = mm.available_parameters("Search")     # or "Calibration"/"Gptmd"/"GlycoSearch"/"XLSearch"
 sum(len(v) for v in ap.values())           # ~112 settings for Search
-ap["SearchParameters"]["DoParsimony"]      # "true"
+ap["SearchParameters"]["DoParsimony"]      # True  (a Python value, not TOML text)
 list(ap)                                    # every section header
+```
+
+Values come back as Python objects, so you can edit the dict and hand the whole thing back:
+
+```python
+ap["SearchParameters"]["DoParsimony"] = False
+mm.search(spectra, database, "out", params=ap)
 ```
 
 ## 3. `run_toml()` — bring your own complete config

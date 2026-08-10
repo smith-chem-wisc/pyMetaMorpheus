@@ -55,12 +55,27 @@ class TaskResult:
 
     @property
     def all_proteins(self) -> Path | None:
-        """``AllQuantifiedProteinGroups.tsv`` — protein groups (Search + LFQ)."""
-        return self.file("AllQuantifiedProteinGroups.tsv")
+        """Protein groups (Search).
+
+        MetaMorpheus names this file by whether quantification ran:
+        ``AllQuantifiedProteinGroups.tsv`` with label-free quantification on (the
+        default), plain ``AllProteinGroups.tsv`` with it off — which is exactly
+        what ``search(..., quantify=False)`` produces. Looking only for the
+        quantified name returned ``None`` for those runs, which reads as "no
+        protein groups were identified" rather than "look under the other name".
+        """
+        return self.file("AllQuantifiedProteinGroups.tsv") or self.file(
+            "AllProteinGroups.tsv"
+        )
 
     @property
     def quantified_proteins(self) -> Path | None:
-        """Alias for :attr:`all_proteins` — FlashLFQ protein-group intensities."""
+        """FlashLFQ protein-group intensities (Search + LFQ).
+
+        Unlike :attr:`all_proteins` this does **not** fall back to the unquantified
+        file: asking for quantified proteins when quantification did not run has no
+        answer, and ``None`` is the honest one.
+        """
         return self.file("AllQuantifiedProteinGroups.tsv")
 
     @property
@@ -149,11 +164,15 @@ class RunResult:
 
 
 def discover_tasks(output_dir: Path) -> list[TaskResult]:
-    """Find ``TaskN<Type>Task`` subfolders in ``output_dir``, ordered by N.
+    """Find every ``TaskN<Type>Task`` subfolder in ``output_dir``, ordered by N.
 
     MetaMorpheus names each task folder ``Task<index><TaskType>`` (e.g.
     ``Task3SearchTask``). We parse the leading ``Task<int>`` prefix for ordering
     and take the remainder as the task type.
+
+    This reports what is *on disk*, which for a reused output directory includes
+    folders from earlier runs. Picking out the ones a particular run produced is
+    :func:`pymetamorpheus._engine.select_run_tasks`.
     """
     results: list[TaskResult] = []
     for child in output_dir.iterdir():

@@ -113,11 +113,18 @@ def common_overrides(
     min_peptide_length: int | None = None,
     max_peptide_length: int | None = None,
     max_threads: int | None = None,
+    params: dict | None = None,
 ) -> dict[tuple[str | None, str], object]:
     """Build the ``(section, key) -> value`` map for the CommonParameters shared
     by every task type. Only non-None arguments produce an override; anything
     left None keeps MetaMorpheus's own default from ``CMD -g``.
+
+    ``params`` is the caller's arbitrary passthrough. It is not merged here — the
+    caller does that, last, so it wins — but it is inspected, because one named
+    argument (``protease``) is only safe depending on what ``params`` says. See
+    the protease branch below.
     """
+    merged = normalize_params(params)
     ov: dict[tuple[str | None, str], object] = {}
     cp = "CommonParameters"
     dp = "CommonParameters.DigestionParams"
@@ -135,7 +142,43 @@ def common_overrides(
             raise UsageError("max_threads must be >= 1.")
         ov[(cp, "MaxThreadsToUsePerFile")] = int(max_threads)
     if protease is not None:
-        # MetaMorpheus stores the protease in two keys in DigestionParams.
+        # MetaMorpheus stores the protease in TWO keys, and they are not always the
+        # same value. mzLib's DigestionParams.RecordSpecificProtease copies Protease
+        # into SpecificProtease and then, for a non-specific search
+        # (SearchModeType = "None"), overwrites Protease with singleN/singleC while
+        # SpecificProtease keeps the real enzyme.
+        #
+        # That method runs in the CONSTRUCTOR only. Deserialising a TOML sets the
+        # properties directly, so whatever the file says is what runs — verified by
+        # running: a config with SearchModeType = "None" and Protease = "trypsin"
+        # comes back out of MetaMorpheus's own Task Settings as Protease =
+        # "trypsin", i.e. a full-tryptic search where a non-specific one was asked
+        # for. Writing the same enzyme into both keys is therefore only correct
+        # while the search is specific.
+        #
+        # We refuse rather than emulate. Deriving singleN/singleC here would put
+        # mzLib's digestion rule inside the binding — a repair site, and one that
+        # goes stale silently (D-INHERIT). See UPSTREAM.md U2.
+        mode = merged.get((dp, "SearchModeType"))
+        caller_set_protease = (dp, "Protease") in merged
+        if (
+            mode is not None
+            and str(mode).strip('"') != "Full"
+            and not caller_set_protease
+        ):
+            raise UsageError(
+                f"protease={protease!r} cannot be combined with "
+                f"SearchModeType={str(mode).strip(chr(34))!r}. For a semi- or "
+                "non-specific search MetaMorpheus expects "
+                "DigestionParams.Protease to hold 'singleN'/'singleC' while "
+                "SpecificProtease holds the real enzyme, and it does not derive "
+                "that when reading a config file — so writing the enzyme into "
+                "both keys would silently run a specific search instead. Set "
+                "both keys yourself, e.g. "
+                "params={'CommonParameters.DigestionParams': "
+                "{'SearchModeType': 'None', 'Protease': 'singleC', "
+                f"'SpecificProtease': '{protease}'}}}}, and leave protease= unset."
+            )
         ov[(dp, "Protease")] = protease
         ov[(dp, "SpecificProtease")] = protease
     if max_missed_cleavages is not None:
@@ -201,6 +244,59 @@ def _validate_databases(database) -> list[Path]:
     return paths
 
 
+def select_run_tasks(
+    found: list,
+    tasks: list[Task],
+    pre_existing: set[str],
+) -> list:
+    """Pick out the task folders *this* run produced.
+
+    MetaMorpheus numbers tasks 1..N within a single invocation and does not
+    continue from whatever is already in the output directory, so a three-task
+    pipeline followed by a one-task search into the same folder leaves four
+    ``TaskN…`` directories of which only one belongs to the search. Reporting all
+    four was wrong twice over: ``RunResult.search`` takes the *last* match, so it
+    handed back the pipeline's stale search, and the "produced nothing" guard was
+    satisfied by leftovers.
+
+    Index alone does not separate them — the stale pipeline's ``Task1CalibrationTask``
+    and this run's ``Task1SearchTask`` share index 1. So a folder counts as ours when
+    its name is exactly the one this run's task at that index must produce, or, for a
+    bring-your-own-TOML task whose folder name we cannot predict, when it was not
+    there before the run started.
+    """
+    expected: dict[int, str | None] = {}
+    for i, t in enumerate(tasks, start=1):
+        expected[i] = (
+            f"Task{i}{t.task_type}Task" if (t.toml_path is None and t.task_type) else None
+        )
+
+    selected = []
+    for tr in found:
+        if tr.index not in expected:
+            continue
+        want = expected[tr.index]
+        if want is not None:
+            if tr.directory.name == want:
+                selected.append(tr)
+        elif tr.directory.name not in pre_existing:
+            selected.append(tr)
+
+    # A bring-your-own-TOML task re-run into the same directory overwrites its own
+    # folder, so "new since the run started" misses it. Fall back to whatever sits
+    # at that index rather than reporting the task as missing.
+    claimed = {tr.index for tr in selected}
+    for i, want in expected.items():
+        if want is None and i not in claimed:
+            for tr in found:
+                if tr.index == i:
+                    selected.append(tr)
+                    break
+
+    selected.sort(key=lambda t: t.index)
+    return selected
+
+
 def run_tasks(
     tasks: list[Task],
     *,
@@ -230,6 +326,12 @@ def run_tasks(
 
     out = Path(output_dir)
     out.mkdir(parents=True, exist_ok=True)
+
+    # Which task folders were already there. Output directories get reused, and
+    # MetaMorpheus numbers tasks 1..N per invocation rather than continuing from
+    # what it finds, so without this snapshot an earlier run's folders are
+    # indistinguishable from this one's — see select_run_tasks.
+    pre_existing = {p.name for p in out.iterdir() if p.is_dir()}
 
     # Stage the patched TOMLs in a scratch dir alongside the output.
     staging = Path(tempfile.mkdtemp(prefix="pymm_toml_", dir=out))
@@ -282,16 +384,27 @@ def run_tasks(
         shutil.rmtree(staging, ignore_errors=True)
 
     result = RunResult(output_dir=out, stdout=proc.stdout, stderr=proc.stderr)
-    result.tasks = discover_tasks(out)
+    result.tasks = select_run_tasks(discover_tasks(out), tasks, pre_existing)
 
     # Fail loudly if MetaMorpheus exited 0 but produced no output folder for a
     # task we asked for (GUIDANCE §8: a "succeeded but produced nothing" run is a
     # failure, not a silent empty result). Each Task of type "Search" maps to a
-    # "SearchTask" folder, etc. Bring-your-own-TOML tasks (task_type is None) are
-    # skipped here — we can't reliably predict their folder name.
+    # "SearchTask" folder, etc.
+    #
+    # Bring-your-own-TOML tasks have no predictable folder NAME, but they do have a
+    # predictable COUNT: N tasks in, N folders out. Checking the count keeps the
+    # guard alive for run_toml()/task_from_toml(), which had none at all — the
+    # named-folder check was narrowed to exclude them and nothing replaced it.
     expected = Counter(
         f"{t.task_type}Task" for t in tasks if t.toml_path is None and t.task_type
     )
+    if len(result.tasks) < len(tasks):
+        raise RunError(
+            f"MetaMorpheus exited 0 but produced {len(result.tasks)} task "
+            f"folder(s) for {len(tasks)} task(s) in {out}. A task it could not "
+            "recognise is skipped with a message rather than failing the run; if "
+            "you supplied your own TOML, check its TaskType.",
+        )
     discovered = Counter(tr.task_type for tr in result.tasks)
     missing = expected - discovered
     if missing:

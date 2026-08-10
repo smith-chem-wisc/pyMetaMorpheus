@@ -32,7 +32,101 @@ def _format_value(value: object) -> str:
         # escape in a basic string.
         escaped = value.replace("\\", "\\\\").replace('"', '\\"').replace("\t", "\\t")
         return f'"{escaped}"'
-    raise TypeError(f"Unsupported TOML value type: {type(value)!r}")
+    if isinstance(value, (list, tuple)):
+        # MetaMorpheus's configs carry arrays (LocalFdrCategories, CustomIons),
+        # available_parameters() reports them, so passing one back has to work.
+        return "[" + ", ".join(_format_value(v) for v in value) + "]"
+    # UsageError, not TypeError: every other bad-input path in this package raises
+    # under PyMetaMorpheusError so a caller can catch the lot, and this one fires
+    # late — after the output directory exists and a MetaMorpheus process has
+    # already been spawned to generate the defaults.
+    raise UsageError(
+        f"Cannot write {type(value).__name__} into a TOML value. Supported: "
+        "str, bool, int, float, and lists of those."
+    )
+
+
+def parse_value(raw: str) -> object:
+    """Parse a TOML scalar/array literal into the Python value it denotes.
+
+    The inverse of :func:`_format_value`, and the reason the two exist as a pair:
+    :func:`read_sections` used to hand back the raw right-of-``=`` text, so the
+    read-modify-write round trip :func:`pymetamorpheus.available_parameters`
+    advertises re-quoted every value it had not touched — ``false`` became the
+    string ``"false"``, and ``TaskType = "Search"`` became ``"\\"Search\\""``,
+    which MetaMorpheus does not recognise as a task type at all. Values now make
+    the trip as Python objects and come back rendered the way they arrived.
+
+    Anything this does not recognise is returned as the raw text unchanged, which
+    round-trips through ``_format_value`` as a quoted string — wrong only for
+    shapes MetaMorpheus does not currently emit (inline tables, multi-line
+    strings). A key nobody can round-trip is better than a key silently corrupted.
+    """
+    text = raw.strip()
+    if not text:
+        return ""
+    if text == "true":
+        return True
+    if text == "false":
+        return False
+    if text.startswith("[") and text.endswith("]"):
+        inner = text[1:-1].strip()
+        if not inner:
+            return []
+        # MetaMorpheus's arrays are flat lists of scalars; no nesting to worry about.
+        return [parse_value(part) for part in _split_array(inner)]
+    if len(text) >= 2 and text[0] == '"' and text[-1] == '"':
+        body = text[1:-1]
+        out: list[str] = []
+        i = 0
+        while i < len(body):
+            ch = body[i]
+            if ch == "\\" and i + 1 < len(body):
+                nxt = body[i + 1]
+                out.append({"t": "\t", "n": "\n", "r": "\r", '"': '"', "\\": "\\"}.get(nxt, nxt))
+                i += 2
+                continue
+            out.append(ch)
+            i += 1
+        return "".join(out)
+    try:
+        return int(text)
+    except ValueError:
+        pass
+    try:
+        return float(text)
+    except ValueError:
+        pass
+    return raw.strip()
+
+
+def _split_array(inner: str) -> list[str]:
+    """Split a flat TOML array body on commas that are not inside a string."""
+    parts: list[str] = []
+    buf: list[str] = []
+    in_string = False
+    escaped = False
+    for ch in inner:
+        if escaped:
+            buf.append(ch)
+            escaped = False
+            continue
+        if ch == "\\" and in_string:
+            buf.append(ch)
+            escaped = True
+            continue
+        if ch == '"':
+            in_string = not in_string
+            buf.append(ch)
+            continue
+        if ch == "," and not in_string:
+            parts.append("".join(buf))
+            buf = []
+            continue
+        buf.append(ch)
+    if "".join(buf).strip():
+        parts.append("".join(buf))
+    return parts
 
 
 def patch_toml(
@@ -83,16 +177,20 @@ def patch_toml(
     return applied
 
 
-def read_sections(path: Path) -> dict[str | None, dict[str, str]]:
-    """Parse a TOML into ``{section: {key: raw_value_string}}`` for discovery.
+def read_sections(path: Path) -> dict[str | None, dict[str, object]]:
+    """Parse a TOML into ``{section: {key: value}}`` for discovery.
 
     Read-only and deliberately shallow — it mirrors the same single-line
-    ``key = value`` model :func:`patch_toml` edits (so what it reports is exactly
-    what ``params`` can override). ``section`` is the exact bracket header, or
-    ``None`` for keys before the first section. Values are the raw TOML text
-    (right of ``=``, trimmed), not parsed into Python types.
+    ``key = value`` model :func:`patch_toml` edits, so what it reports is exactly
+    what ``params`` can override. ``section`` is the exact bracket header, or
+    ``None`` for keys before the first section.
+
+    Values are **Python objects** (:func:`parse_value`), not raw TOML text, so the
+    dict this returns can be edited and handed straight back as ``params``. It
+    used to return raw text, which made that round trip corrupt every key it
+    touched — see :func:`parse_value`.
     """
-    sections: dict[str | None, dict[str, str]] = {}
+    sections: dict[str | None, dict[str, object]] = {}
     current: str | None = None
     with open(path, "r", encoding="utf-8", newline="") as fh:
         for line in fh:
@@ -104,7 +202,7 @@ def read_sections(path: Path) -> dict[str | None, dict[str, str]]:
             if not stripped or stripped.startswith("#") or "=" not in line:
                 continue
             key, _, value = line.partition("=")
-            sections.setdefault(current, {})[key.strip()] = value.strip()
+            sections.setdefault(current, {})[key.strip()] = parse_value(value)
     return sections
 
 

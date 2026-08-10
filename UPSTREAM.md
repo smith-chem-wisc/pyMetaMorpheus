@@ -29,6 +29,18 @@ _Last updated: 2026-08-09._
 | **Caveat carried meanwhile** | `available_parameters` documents that `"Averaging"` is unavailable and why; `_engine.py` explains the omission at the point the filename is built. Both are deleted when this lands. |
 | **Status** | **OPEN, fix proposed** — issue [MetaMorpheus#2707](https://github.com/smith-chem-wisc/MetaMorpheus/issues/2707), pull request [MetaMorpheus#2708](https://github.com/smith-chem-wisc/MetaMorpheus/pull/2708) (2026-08-09). Verified there by building and running: `-g` writes six tomls, and the generated `AveragingTask.toml` fed straight back in finishes `Task1AveragingTask` and writes an averaged mzML. When it merges: bump the pin, add `average()` / `make_averaging_task()`, and **delete** the caveats in `api.py` and `_engine.py`. |
 
+### U2 — a config file can request a non-specific search and silently get a specific one
+
+| | |
+|---|---|
+| **What** | `DigestionParams.RecordSpecificProtease()` is what makes a non-specific search work: it copies `Protease` into `SpecificProtease` and then replaces `Protease` with `singleN`/`singleC`. It runs in the **constructor only**. Deserialising a task TOML sets the properties directly, so the file's literal values are used as-is and the rule never fires. |
+| **Native C# consumer affected?** | **Yes.** Anyone hand-writing or hand-editing a task TOML — the documented way to drive `CMD.exe` — hits it identically. Nothing about this is Python-specific. |
+| **How it surfaced** | A code review of pyMetaMorpheus flagged that its `protease=` argument writes both keys. Checking whether that mattered meant asking what MetaMorpheus does with the pair, and the answer was: whatever the file says. |
+| **Verified by running** | A generated `SearchTask.toml` edited to `SearchModeType = "None"` + `Protease = "trypsin"` + `SpecificProtease = "trypsin"`, run through `CMD.exe`, comes back out in MetaMorpheus's own `Task Settings/Task1SearchTaskconfig.toml` as `Protease = "trypsin"` — a full-tryptic search where a non-specific one was requested, with no warning. |
+| **Possible fix** | Re-derive the pair after deserialisation (call `RecordSpecificProtease`, or validate the combination and refuse), so a config cannot express a state the constructor would never produce. |
+| **Caveat carried meanwhile** | `protease=` refuses to combine with a non-`Full` `SearchModeType` unless the caller sets `Protease` explicitly, and says why. Deleted if this is fixed upstream. |
+| **Status** | **OPEN** — not yet filed. |
+
 ### What this package does *not* do about it
 
 It does not ship a hand-written `AveragingTask.toml` to patch. That would put MetaMorpheus's own

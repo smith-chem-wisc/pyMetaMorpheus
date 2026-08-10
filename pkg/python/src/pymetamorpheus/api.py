@@ -88,6 +88,7 @@ def make_search_task(
         min_peptide_length=min_peptide_length,
         max_peptide_length=max_peptide_length,
         max_threads=max_threads,
+        params=params,
     )
     sp = "SearchParameters"
     if quantify is not None:
@@ -120,6 +121,7 @@ def make_calibration_task(
         product_tol_ppm=product_tol_ppm,
         protease=protease,
         max_threads=max_threads,
+        params=params,
     )
     overrides.update(normalize_params(params))
     return Task(task_type="Calibration", overrides=overrides)
@@ -139,6 +141,7 @@ def make_gptmd_task(
         product_tol_ppm=product_tol_ppm,
         protease=protease,
         max_threads=max_threads,
+        params=params,
     )
     overrides.update(normalize_params(params))
     return Task(task_type="Gptmd", overrides=overrides)
@@ -165,6 +168,7 @@ def make_glyco_search_task(
         product_tol_ppm=product_tol_ppm,
         protease=protease,
         max_threads=max_threads,
+        params=params,
     )
     if glyco_search_type is not None:
         overrides[("_glycoSearchParameters", "GlycoSearchType")] = glyco_search_type
@@ -190,6 +194,7 @@ def make_xl_search_task(
         product_tol_ppm=product_tol_ppm,
         protease=protease,
         max_threads=max_threads,
+        params=params,
     )
     overrides.update(normalize_params(params))
     return Task(task_type="XLSearch", overrides=overrides)
@@ -418,12 +423,19 @@ def available_parameters(task_type: str = "Search") -> dict[str | None, dict[str
     today via :func:`run_toml` with a hand-written config — see ``UPSTREAM.md``
     (U1), which tracks the fix landing in MetaMorpheus itself.
 
+    Values are Python objects — ``True``, ``0.01``, ``"Reverse"``, ``["FullySpecific"]``
+    — so the dict can be edited and passed straight back as ``params``. It used to
+    report the raw TOML text, which made that round trip re-quote every value it had
+    not touched (``false`` became the string ``"false"``, and ``TaskType`` became
+    ``'"Search"'``, which MetaMorpheus does not recognise as a task type).
+
     Example::
 
         params = pymetamorpheus.available_parameters("Search")
-        params["SearchParameters"]["DoParsimony"]       # -> "true"
-        # then override any of them:
-        mm.search(..., params={"SearchParameters": {"DoParsimony": False}})
+        params["SearchParameters"]["DoParsimony"]       # -> True
+        # edit and hand the whole thing back, or just the keys you changed:
+        params["SearchParameters"]["DoParsimony"] = False
+        mm.search(..., params=params)
     """
     with tempfile.TemporaryDirectory(prefix="pymm_params_") as tmp:
         defaults = generate_default_tomls(Path(tmp))
