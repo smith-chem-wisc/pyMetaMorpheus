@@ -61,7 +61,7 @@ def test_params_passthrough_lands_in_run(cli_or_skip, sample_data, tmp_path):
         timeout=1800,
     )
     cfg = next(out.glob("**/Task Settings/*config.toml"))
-    assert read_sections(cfg)["SearchParameters"]["DoParsimony"] == "false"
+    assert read_sections(cfg)["SearchParameters"]["DoParsimony"] is False
 
 
 def test_run_toml_verbatim(cli_or_skip, sample_data, tmp_path):
