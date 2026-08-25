@@ -65,7 +65,16 @@ jobs:
           python-version: "3.12"
       - uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: "8.0.x"
+          # Both SDKs, deliberately. The pin below currently points at a MetaMorpheus that
+          # targets net8.0, but MetaMorpheus moved to net10 in #2710 (merged 2026-08-13), so the
+          # next pin this repository's watcher proposes will be a net10 tree. An 8.0.x-only SDK
+          # cannot build that -- it fails NETSDK1045, and the error blames every csproj rather
+          # than the SDK selection, which reads as though the upstream release broke something.
+          # Carrying both means the bump pull request builds on arrival instead of arriving red.
+          # Drop 8.0.x once the pin has moved past #2710 and settled.
+          dotnet-version: |
+            8.0.x
+            10.0.x
       - name: Fetch MetaMorpheus at the pinned commit
         run: |
           set -euo pipefail
