@@ -875,10 +875,10 @@ bottom.</p>
 this is quick:</p>
 <div class="highlight"><pre><span></span><code>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/smith-chem-wisc/pyMetaMorpheus.git
 <span class="nb">cd</span><span class="w"> </span>pyMetaMorpheus
-python<span class="w"> </span>-m<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </span>pkg/python<span class="w">           </span><span class="c1"># add &quot;[pandas]&quot; for nicer result tables</span>
+python<span class="w"> </span>-m<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </span>pkg/python<span class="w">           </span><span class="c1"># add "[pandas]" for nicer result tables</span>
 </code></pre></div>
 <p>Check it imports:</p>
-<div class="highlight"><pre><span></span><code>python<span class="w"> </span>-c<span class="w"> </span><span class="s2">&quot;import pymetamorpheus as mm; print(mm.__version__)&quot;</span>
+<div class="highlight"><pre><span></span><code>python<span class="w"> </span>-c<span class="w"> </span><span class="s2">"import pymetamorpheus as mm; print(mm.__version__)"</span>
 </code></pre></div>
 <h2 id="step-2-point-at-a-metamorpheus-cli">Step 2 — point at a MetaMorpheus CLI</h2>
 <p>Set the <code>PYMM_METAMORPHEUS</code> environment variable to the MetaMorpheus <code>CMD</code> executable (or the folder
@@ -886,7 +886,7 @@ containing it). If you have a MetaMorpheus checkout that you've built:</p>
 <div class="tabbed-set tabbed-alternate" data-tabs="1:2"><input checked="checked" id="__tabbed_1_1" name="__tabbed_1" type="radio" /><input id="__tabbed_1_2" name="__tabbed_1" type="radio" /><div class="tabbed-labels"><label for="__tabbed_1_1">Windows (PowerShell)</label><label for="__tabbed_1_2">Linux / macOS</label></div>
 <div class="tabbed-content">
 <div class="tabbed-block">
-<div class="highlight"><pre><span></span><code><span class="nv">$env:PYMM_METAMORPHEUS</span> <span class="p">=</span> <span class="s2">&quot;C:\path\to\MetaMorpheus\CMD\bin\Release\net8.0\CMD.exe&quot;</span>
+<div class="highlight"><pre><span></span><code><span class="nv">$env:PYMM_METAMORPHEUS</span> <span class="p">=</span> <span class="s2">"C:\path\to\MetaMorpheus\CMD\bin\Release\net8.0\CMD.exe"</span>
 </code></pre></div>
 </div>
 <div class="tabbed-block">
@@ -914,23 +914,23 @@ from Python with pyMzLib — see <strong><a href="../getting-data/">Getting your
 <div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">pymetamorpheus</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">mm</span>
 
 <span class="n">result</span> <span class="o">=</span> <span class="n">mm</span><span class="o">.</span><span class="n">search</span><span class="p">(</span>
-    <span class="n">spectra</span><span class="o">=</span><span class="s2">&quot;SmallCalibratible_Yeast.mzML&quot;</span><span class="p">,</span>
-    <span class="n">database</span><span class="o">=</span><span class="s2">&quot;SmallYeast.fasta&quot;</span><span class="p">,</span>
-    <span class="n">output_dir</span><span class="o">=</span><span class="s2">&quot;my_first_run&quot;</span><span class="p">,</span>
+    <span class="n">spectra</span><span class="o">=</span><span class="s2">"SmallCalibratible_Yeast.mzML"</span><span class="p">,</span>
+    <span class="n">database</span><span class="o">=</span><span class="s2">"SmallYeast.fasta"</span><span class="p">,</span>
+    <span class="n">output_dir</span><span class="o">=</span><span class="s2">"my_first_run"</span><span class="p">,</span>
     <span class="n">precursor_tol_ppm</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span>
     <span class="n">product_tol_ppm</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span>
 <span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;done:&quot;</span><span class="p">,</span> <span class="n">result</span><span class="o">.</span><span class="n">search</span><span class="o">.</span><span class="n">directory</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">"done:"</span><span class="p">,</span> <span class="n">result</span><span class="o">.</span><span class="n">search</span><span class="o">.</span><span class="n">directory</span><span class="p">)</span>
 </code></pre></div>
 <h2 id="step-5-look-at-what-you-got">Step 5 — look at what you got</h2>
 <p>Read the human-readable summary first, then count your confident IDs:</p>
-<div class="highlight"><pre><span></span><code><span class="c1"># 1. MetaMorpheus&#39;s own summary — ID counts, FDR, settings used</span>
-<span class="nb">print</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">search</span><span class="o">.</span><span class="n">summary</span><span class="o">.</span><span class="n">read_text</span><span class="p">(</span><span class="n">encoding</span><span class="o">=</span><span class="s2">&quot;utf-8&quot;</span><span class="p">))</span>
+<div class="highlight"><pre><span></span><code><span class="c1"># 1. MetaMorpheus's own summary — ID counts, FDR, settings used</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">search</span><span class="o">.</span><span class="n">summary</span><span class="o">.</span><span class="n">read_text</span><span class="p">(</span><span class="n">encoding</span><span class="o">=</span><span class="s2">"utf-8"</span><span class="p">))</span>
 
-<span class="c1"># 2. Count identified peptides at 1% FDR (needs pandas: pip install &quot;pymetamorpheus[pandas]&quot;)</span>
+<span class="c1"># 2. Count identified peptides at 1% FDR (needs pandas: pip install "pymetamorpheus[pandas]")</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
-<span class="n">peptides</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">search</span><span class="o">.</span><span class="n">all_peptides</span><span class="p">,</span> <span class="n">sep</span><span class="o">=</span><span class="s2">&quot;</span><span class="se">\t</span><span class="s2">&quot;</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">peptides</span><span class="p">[</span><span class="n">peptides</span><span class="p">[</span><span class="s2">&quot;QValue&quot;</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="mf">0.01</span><span class="p">]),</span> <span class="s2">&quot;peptides at q ≤ 0.01&quot;</span><span class="p">)</span>
+<span class="n">peptides</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">search</span><span class="o">.</span><span class="n">all_peptides</span><span class="p">,</span> <span class="n">sep</span><span class="o">=</span><span class="s2">"</span><span class="se">\t</span><span class="s2">"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">peptides</span><span class="p">[</span><span class="n">peptides</span><span class="p">[</span><span class="s2">"QValue"</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="mf">0.01</span><span class="p">]),</span> <span class="s2">"peptides at q ≤ 0.01"</span><span class="p">)</span>
 </code></pre></div>
 <p>No pandas? The <a href="../results/">Results guide</a> shows the same thing with only the standard library.</p>
 <h2 id="where-to-go-next">Where to go next</h2>

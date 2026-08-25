@@ -824,12 +824,12 @@ ignored.</p>
 <div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">pymetamorpheus</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">mm</span>
 
 <span class="n">mm</span><span class="o">.</span><span class="n">search</span><span class="p">(</span>
-    <span class="s2">&quot;run.mzML&quot;</span><span class="p">,</span> <span class="s2">&quot;proteins.fasta&quot;</span><span class="p">,</span> <span class="s2">&quot;out&quot;</span><span class="p">,</span>
+    <span class="s2">"run.mzML"</span><span class="p">,</span> <span class="s2">"proteins.fasta"</span><span class="p">,</span> <span class="s2">"out"</span><span class="p">,</span>
     <span class="n">precursor_tol_ppm</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span>                              <span class="c1"># named arg</span>
     <span class="n">params</span><span class="o">=</span><span class="p">{</span>
-        <span class="s2">&quot;SearchParameters&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;DoParsimony&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span> <span class="s2">&quot;WritePrunedDatabase&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">},</span>
-        <span class="s2">&quot;CommonParameters.DigestionParams&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;MaxMissedCleavages&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">},</span>
-        <span class="s2">&quot;CommonParameters&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;TrimMsMsPeaks&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">},</span>
+        <span class="s2">"SearchParameters"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"DoParsimony"</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span> <span class="s2">"WritePrunedDatabase"</span><span class="p">:</span> <span class="kc">True</span><span class="p">},</span>
+        <span class="s2">"CommonParameters.DigestionParams"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"MaxMissedCleavages"</span><span class="p">:</span> <span class="mi">1</span><span class="p">},</span>
+        <span class="s2">"CommonParameters"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"TrimMsMsPeaks"</span><span class="p">:</span> <span class="kc">False</span><span class="p">},</span>
     <span class="p">},</span>
 <span class="p">)</span>
 </code></pre></div>
@@ -838,24 +838,24 @@ ignored.</p>
 <h3 id="discovering-whats-available">Discovering what's available</h3>
 <p><code>available_parameters(task_type)</code> returns the entire default config as <code>{section: {key:
 default_value}}</code>, so you can see exactly what <code>params</code> accepts:</p>
-<div class="highlight"><pre><span></span><code><span class="n">ap</span> <span class="o">=</span> <span class="n">mm</span><span class="o">.</span><span class="n">available_parameters</span><span class="p">(</span><span class="s2">&quot;Search&quot;</span><span class="p">)</span>     <span class="c1"># or &quot;Calibration&quot;/&quot;Gptmd&quot;/&quot;GlycoSearch&quot;/&quot;XLSearch&quot;</span>
+<div class="highlight"><pre><span></span><code><span class="n">ap</span> <span class="o">=</span> <span class="n">mm</span><span class="o">.</span><span class="n">available_parameters</span><span class="p">(</span><span class="s2">"Search"</span><span class="p">)</span>     <span class="c1"># or "Calibration"/"Gptmd"/"GlycoSearch"/"XLSearch"</span>
 <span class="nb">sum</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">ap</span><span class="o">.</span><span class="n">values</span><span class="p">())</span>           <span class="c1"># ~112 settings for Search</span>
-<span class="n">ap</span><span class="p">[</span><span class="s2">&quot;SearchParameters&quot;</span><span class="p">][</span><span class="s2">&quot;DoParsimony&quot;</span><span class="p">]</span>      <span class="c1"># True  (a Python value, not TOML text)</span>
+<span class="n">ap</span><span class="p">[</span><span class="s2">"SearchParameters"</span><span class="p">][</span><span class="s2">"DoParsimony"</span><span class="p">]</span>      <span class="c1"># True  (a Python value, not TOML text)</span>
 <span class="nb">list</span><span class="p">(</span><span class="n">ap</span><span class="p">)</span>                                    <span class="c1"># every section header</span>
 </code></pre></div>
 <p>Values come back as Python objects, so you can edit the dict and hand the whole thing back:</p>
-<div class="highlight"><pre><span></span><code><span class="n">ap</span><span class="p">[</span><span class="s2">&quot;SearchParameters&quot;</span><span class="p">][</span><span class="s2">&quot;DoParsimony&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span>
-<span class="n">mm</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">spectra</span><span class="p">,</span> <span class="n">database</span><span class="p">,</span> <span class="s2">&quot;out&quot;</span><span class="p">,</span> <span class="n">params</span><span class="o">=</span><span class="n">ap</span><span class="p">)</span>
+<div class="highlight"><pre><span></span><code><span class="n">ap</span><span class="p">[</span><span class="s2">"SearchParameters"</span><span class="p">][</span><span class="s2">"DoParsimony"</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span>
+<span class="n">mm</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">spectra</span><span class="p">,</span> <span class="n">database</span><span class="p">,</span> <span class="s2">"out"</span><span class="p">,</span> <span class="n">params</span><span class="o">=</span><span class="n">ap</span><span class="p">)</span>
 </code></pre></div>
 <h2 id="3-run_toml-bring-your-own-complete-config">3. <code>run_toml()</code> — bring your own complete config</h2>
 <p>For anything the single-line patcher can't express — multi-line arrays, nested tables, a config you
 authored in the MetaMorpheus GUI and exported — hand over a complete <code>.toml</code> and it runs <strong>verbatim</strong>:</p>
-<div class="highlight"><pre><span></span><code><span class="n">mm</span><span class="o">.</span><span class="n">run_toml</span><span class="p">(</span><span class="s2">&quot;MySearchTask.toml&quot;</span><span class="p">,</span> <span class="s2">&quot;run.mzML&quot;</span><span class="p">,</span> <span class="s2">&quot;proteins.fasta&quot;</span><span class="p">,</span> <span class="s2">&quot;out&quot;</span><span class="p">)</span>
+<div class="highlight"><pre><span></span><code><span class="n">mm</span><span class="o">.</span><span class="n">run_toml</span><span class="p">(</span><span class="s2">"MySearchTask.toml"</span><span class="p">,</span> <span class="s2">"run.mzML"</span><span class="p">,</span> <span class="s2">"proteins.fasta"</span><span class="p">,</span> <span class="s2">"out"</span><span class="p">)</span>
 
 <span class="c1"># Or compose BYO tasks into a pipeline:</span>
 <span class="n">mm</span><span class="o">.</span><span class="n">pipeline</span><span class="p">(</span>
-    <span class="p">[</span><span class="n">mm</span><span class="o">.</span><span class="n">task_from_toml</span><span class="p">(</span><span class="s2">&quot;Calib.toml&quot;</span><span class="p">),</span> <span class="n">mm</span><span class="o">.</span><span class="n">task_from_toml</span><span class="p">(</span><span class="s2">&quot;Search.toml&quot;</span><span class="p">)],</span>
-    <span class="n">spectra</span><span class="o">=</span><span class="s2">&quot;run.mzML&quot;</span><span class="p">,</span> <span class="n">database</span><span class="o">=</span><span class="s2">&quot;proteins.fasta&quot;</span><span class="p">,</span> <span class="n">output_dir</span><span class="o">=</span><span class="s2">&quot;out&quot;</span><span class="p">,</span>
+    <span class="p">[</span><span class="n">mm</span><span class="o">.</span><span class="n">task_from_toml</span><span class="p">(</span><span class="s2">"Calib.toml"</span><span class="p">),</span> <span class="n">mm</span><span class="o">.</span><span class="n">task_from_toml</span><span class="p">(</span><span class="s2">"Search.toml"</span><span class="p">)],</span>
+    <span class="n">spectra</span><span class="o">=</span><span class="s2">"run.mzML"</span><span class="p">,</span> <span class="n">database</span><span class="o">=</span><span class="s2">"proteins.fasta"</span><span class="p">,</span> <span class="n">output_dir</span><span class="o">=</span><span class="s2">"out"</span><span class="p">,</span>
 <span class="p">)</span>
 </code></pre></div>
 <p>A common recipe: generate a default with <code>available_parameters</code> as your guide (or the MetaMorpheus

@@ -874,12 +874,12 @@ are built by <code>pkg/build/publish-runner.ps1 -Rid win-x64|linux-x64|osx-x64|o
 </code></pre></div>
 <p>Then run the bundled small test against a MetaMorpheus checkout to confirm the round-trip:</p>
 <div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">os</span><span class="o">,</span><span class="w"> </span><span class="nn">pymetamorpheus</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">mm</span>
-<span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s2">&quot;PYMM_METAMORPHEUS&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="sa">r</span><span class="s2">&quot;...\CMD\bin\Release\net8.0\CMD.exe&quot;</span>
-<span class="n">data</span> <span class="o">=</span> <span class="sa">r</span><span class="s2">&quot;...\MetaMorpheus\EngineLayer\Data&quot;</span>
+<span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s2">"PYMM_METAMORPHEUS"</span><span class="p">]</span> <span class="o">=</span> <span class="sa">r</span><span class="s2">"...\CMD\bin\Release\net8.0\CMD.exe"</span>
+<span class="n">data</span> <span class="o">=</span> <span class="sa">r</span><span class="s2">"...\MetaMorpheus\EngineLayer\Data"</span>
 <span class="n">result</span> <span class="o">=</span> <span class="n">mm</span><span class="o">.</span><span class="n">search</span><span class="p">(</span>
-    <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="s2">&quot;SmallCalibratible_Yeast.mzML&quot;</span><span class="p">),</span>
-    <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="s2">&quot;SmallYeast.fasta&quot;</span><span class="p">),</span>
-    <span class="s2">&quot;out&quot;</span><span class="p">,</span>
+    <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="s2">"SmallCalibratible_Yeast.mzML"</span><span class="p">),</span>
+    <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="s2">"SmallYeast.fasta"</span><span class="p">),</span>
+    <span class="s2">"out"</span><span class="p">,</span>
 <span class="p">)</span>
 <span class="nb">print</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">search</span><span class="o">.</span><span class="n">all_psms</span><span class="p">)</span>   <span class="c1"># AllPSMs.psmtsv should exist</span>
 </code></pre></div>

@@ -835,12 +835,12 @@ in, a run directory out.</p>
 <div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">pymetamorpheus</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">mm</span>
 
 <span class="n">result</span> <span class="o">=</span> <span class="n">mm</span><span class="o">.</span><span class="n">search</span><span class="p">(</span>
-    <span class="n">spectra</span><span class="o">=</span><span class="s2">&quot;myrun.mzML&quot;</span><span class="p">,</span>
-    <span class="n">database</span><span class="o">=</span><span class="s2">&quot;proteins.fasta&quot;</span><span class="p">,</span>
-    <span class="n">output_dir</span><span class="o">=</span><span class="s2">&quot;out&quot;</span><span class="p">,</span>
+    <span class="n">spectra</span><span class="o">=</span><span class="s2">"myrun.mzML"</span><span class="p">,</span>
+    <span class="n">database</span><span class="o">=</span><span class="s2">"proteins.fasta"</span><span class="p">,</span>
+    <span class="n">output_dir</span><span class="o">=</span><span class="s2">"out"</span><span class="p">,</span>
     <span class="n">precursor_tol_ppm</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span>
     <span class="n">product_tol_ppm</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span>
-    <span class="n">variable_mods</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;Common Variable|Oxidation on M&quot;</span><span class="p">],</span>
+    <span class="n">variable_mods</span><span class="o">=</span><span class="p">[</span><span class="s2">"Common Variable|Oxidation on M"</span><span class="p">],</span>
     <span class="n">max_threads</span><span class="o">=</span><span class="mi">8</span><span class="p">,</span>
 <span class="p">)</span>
 
@@ -928,15 +928,15 @@ non-interactively. Convert <code>.raw</code> with MSConvert, or export <code>.mz
 <p>Modifications are given as <code>"Category|Name"</code> strings and translated to MetaMorpheus's tab-delimited
 <code>ListOfMods*</code> form for you:</p>
 <div class="highlight"><pre><span></span><code><span class="n">mm</span><span class="o">.</span><span class="n">search</span><span class="p">(</span>
-    <span class="n">spectra</span><span class="p">,</span> <span class="n">database</span><span class="p">,</span> <span class="s2">&quot;out&quot;</span><span class="p">,</span>
-    <span class="n">fixed_mods</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;Common Fixed|Carbamidomethyl on C&quot;</span><span class="p">],</span>
-    <span class="n">variable_mods</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;Common Variable|Oxidation on M&quot;</span><span class="p">,</span> <span class="s2">&quot;Common Variable|Acetylation on X&quot;</span><span class="p">],</span>
+    <span class="n">spectra</span><span class="p">,</span> <span class="n">database</span><span class="p">,</span> <span class="s2">"out"</span><span class="p">,</span>
+    <span class="n">fixed_mods</span><span class="o">=</span><span class="p">[</span><span class="s2">"Common Fixed|Carbamidomethyl on C"</span><span class="p">],</span>
+    <span class="n">variable_mods</span><span class="o">=</span><span class="p">[</span><span class="s2">"Common Variable|Oxidation on M"</span><span class="p">,</span> <span class="s2">"Common Variable|Acetylation on X"</span><span class="p">],</span>
 <span class="p">)</span>
 </code></pre></div>
 <h2 id="quantification-flashlfq">Quantification (FlashLFQ)</h2>
 <p>Label-free quantification runs <strong>as part of the search</strong> and is <strong>on by default</strong> — a plain
 <code>search(...)</code> already writes FlashLFQ output alongside the identifications:</p>
-<div class="highlight"><pre><span></span><code><span class="n">result</span> <span class="o">=</span> <span class="n">mm</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="s2">&quot;myrun.mzML&quot;</span><span class="p">,</span> <span class="s2">&quot;proteins.fasta&quot;</span><span class="p">,</span> <span class="s2">&quot;out&quot;</span><span class="p">)</span>
+<div class="highlight"><pre><span></span><code><span class="n">result</span> <span class="o">=</span> <span class="n">mm</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="s2">"myrun.mzML"</span><span class="p">,</span> <span class="s2">"proteins.fasta"</span><span class="p">,</span> <span class="s2">"out"</span><span class="p">)</span>
 <span class="n">s</span> <span class="o">=</span> <span class="n">result</span><span class="o">.</span><span class="n">search</span>
 <span class="n">s</span><span class="o">.</span><span class="n">quantified_proteins</span>   <span class="c1"># AllQuantifiedProteinGroups.tsv</span>
 <span class="n">s</span><span class="o">.</span><span class="n">quantified_peptides</span>   <span class="c1"># AllQuantifiedPeptides.tsv</span>
@@ -975,8 +975,8 @@ non-interactively. Convert <code>.raw</code> with MSConvert, or export <code>.mz
 </tbody>
 </table>
 <div class="highlight"><pre><span></span><code><span class="c1"># Turn quant off, or tune it:</span>
-<span class="n">mm</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">spectra</span><span class="p">,</span> <span class="n">database</span><span class="p">,</span> <span class="s2">&quot;out&quot;</span><span class="p">,</span> <span class="n">quantify</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
-<span class="n">mm</span><span class="o">.</span><span class="n">search</span><span class="p">([</span><span class="n">run1</span><span class="p">,</span> <span class="n">run2</span><span class="p">],</span> <span class="n">database</span><span class="p">,</span> <span class="s2">&quot;out&quot;</span><span class="p">,</span> <span class="n">match_between_runs</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">quantify_ppm_tol</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
+<span class="n">mm</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">spectra</span><span class="p">,</span> <span class="n">database</span><span class="p">,</span> <span class="s2">"out"</span><span class="p">,</span> <span class="n">quantify</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<span class="n">mm</span><span class="o">.</span><span class="n">search</span><span class="p">([</span><span class="n">run1</span><span class="p">,</span> <span class="n">run2</span><span class="p">],</span> <span class="n">database</span><span class="p">,</span> <span class="s2">"out"</span><span class="p">,</span> <span class="n">match_between_runs</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">quantify_ppm_tol</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
 </code></pre></div>
 <div class="admonition tip">
 <p class="admonition-title">Match-between-runs needs multiple files</p>
@@ -987,10 +987,10 @@ call for it to do anything.</p>
 <p>A search can emit a <strong>spectral library</strong> (<code>.msp</code>) built from its confirmed identifications — useful as
 input to library-based searches. It's <strong>off by default</strong>; turn it on with <code>write_spectral_library</code>:</p>
 <div class="highlight"><pre><span></span><code><span class="n">result</span> <span class="o">=</span> <span class="n">mm</span><span class="o">.</span><span class="n">search</span><span class="p">(</span>
-    <span class="s2">&quot;myrun.mzML&quot;</span><span class="p">,</span> <span class="s2">&quot;proteins.fasta&quot;</span><span class="p">,</span> <span class="s2">&quot;out&quot;</span><span class="p">,</span>
+    <span class="s2">"myrun.mzML"</span><span class="p">,</span> <span class="s2">"proteins.fasta"</span><span class="p">,</span> <span class="s2">"out"</span><span class="p">,</span>
     <span class="n">write_spectral_library</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
 <span class="p">)</span>
-<span class="n">result</span><span class="o">.</span><span class="n">search</span><span class="o">.</span><span class="n">spectral_library</span>      <span class="c1"># [Path(&quot;.../SpectralLibrary_&lt;timestamp&gt;.msp&quot;)]</span>
+<span class="n">result</span><span class="o">.</span><span class="n">search</span><span class="o">.</span><span class="n">spectral_library</span>      <span class="c1"># [Path(".../SpectralLibrary_&lt;timestamp&gt;.msp")]</span>
 </code></pre></div>
 <table>
 <thead>

@@ -1891,7 +1891,7 @@ line-patcher can't express, hand a complete config to :func:<code>run_toml</code
 <div class="highlight"><pre><span></span><code>import pymetamorpheus as mm
 result = mm.pipeline(
     [mm.make_calibration_task(), mm.make_gptmd_task(), mm.make_search_task()],
-    spectra=&quot;run.mzML&quot;, database=&quot;proteins.fasta&quot;, output_dir=&quot;out&quot;,
+    spectra="run.mzML", database="proteins.fasta", output_dir="out",
 )
 </code></pre></div>
 <p>MetaMorpheus chains the tasks internally — calibration's calibrated spectra
@@ -1936,7 +1936,7 @@ passthrough can't express. Equivalent to <code>pipeline([task_from_toml(t) ...])
 
 
 </h3>
-<div class="doc-signature highlight"><pre><span></span><code><span class="nf">available_parameters</span><span class="p">(</span><span class="n">task_type</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;Search&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]]</span>
+<div class="doc-signature highlight"><pre><span></span><code><span class="nf">available_parameters</span><span class="p">(</span><span class="n">task_type</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">'Search'</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]]</span>
 </code></pre></div>
 
     <div class="doc doc-contents first">
@@ -1956,10 +1956,10 @@ report the raw TOML text, which made that round trip re-quote every value it had
 not touched (<code>false</code> became the string <code>"false"</code>, and <code>TaskType</code> became
 <code>'"Search"'</code>, which MetaMorpheus does not recognise as a task type).</p>
 <p>Example::</p>
-<div class="highlight"><pre><span></span><code>params = pymetamorpheus.available_parameters(&quot;Search&quot;)
-params[&quot;SearchParameters&quot;][&quot;DoParsimony&quot;]       # -&gt; True
+<div class="highlight"><pre><span></span><code>params = pymetamorpheus.available_parameters("Search")
+params["SearchParameters"]["DoParsimony"]       # -&gt; True
 # edit and hand the whole thing back, or just the keys you changed:
-params[&quot;SearchParameters&quot;][&quot;DoParsimony&quot;] = False
+params["SearchParameters"]["DoParsimony"] = False
 mm.search(..., params=params)
 </code></pre></div>
 

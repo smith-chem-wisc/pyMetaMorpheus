@@ -800,19 +800,19 @@
 run — so the verbs are siblings of <code>search</code>.</p>
 <h2 id="calibration">Calibration</h2>
 <p>Recalibrates the m/z axis, writing calibrated <code>*-calib.mzML</code> spectra you can feed to a later task.</p>
-<div class="highlight"><pre><span></span><code><span class="n">result</span> <span class="o">=</span> <span class="n">mm</span><span class="o">.</span><span class="n">calibrate</span><span class="p">(</span><span class="s2">&quot;myrun.mzML&quot;</span><span class="p">,</span> <span class="s2">&quot;proteins.fasta&quot;</span><span class="p">,</span> <span class="s2">&quot;out&quot;</span><span class="p">)</span>
-<span class="n">calibrated</span> <span class="o">=</span> <span class="n">result</span><span class="o">.</span><span class="n">calibration</span><span class="o">.</span><span class="n">calibrated_spectra</span>   <span class="c1"># [Path(&quot;.../myrun-calib.mzML&quot;)]</span>
+<div class="highlight"><pre><span></span><code><span class="n">result</span> <span class="o">=</span> <span class="n">mm</span><span class="o">.</span><span class="n">calibrate</span><span class="p">(</span><span class="s2">"myrun.mzML"</span><span class="p">,</span> <span class="s2">"proteins.fasta"</span><span class="p">,</span> <span class="s2">"out"</span><span class="p">)</span>
+<span class="n">calibrated</span> <span class="o">=</span> <span class="n">result</span><span class="o">.</span><span class="n">calibration</span><span class="o">.</span><span class="n">calibrated_spectra</span>   <span class="c1"># [Path(".../myrun-calib.mzML")]</span>
 </code></pre></div>
 <h2 id="gptmd">GPTMD</h2>
 <p>The <strong>G</strong>lobal <strong>P</strong>ost-<strong>T</strong>ranslational <strong>M</strong>odification <strong>D</strong>iscovery task augments your protein
 database with modifications it finds, writing a <code>*GPTMD.xml</code> you can search against.</p>
-<div class="highlight"><pre><span></span><code><span class="n">result</span> <span class="o">=</span> <span class="n">mm</span><span class="o">.</span><span class="n">gptmd</span><span class="p">(</span><span class="s2">&quot;myrun.mzML&quot;</span><span class="p">,</span> <span class="s2">&quot;proteins.fasta&quot;</span><span class="p">,</span> <span class="s2">&quot;out&quot;</span><span class="p">)</span>
-<span class="n">augmented_db</span> <span class="o">=</span> <span class="n">result</span><span class="o">.</span><span class="n">gptmd</span><span class="o">.</span><span class="n">gptmd_database</span>            <span class="c1"># [Path(&quot;.../proteinsGPTMD.xml&quot;)]</span>
+<div class="highlight"><pre><span></span><code><span class="n">result</span> <span class="o">=</span> <span class="n">mm</span><span class="o">.</span><span class="n">gptmd</span><span class="p">(</span><span class="s2">"myrun.mzML"</span><span class="p">,</span> <span class="s2">"proteins.fasta"</span><span class="p">,</span> <span class="s2">"out"</span><span class="p">)</span>
+<span class="n">augmented_db</span> <span class="o">=</span> <span class="n">result</span><span class="o">.</span><span class="n">gptmd</span><span class="o">.</span><span class="n">gptmd_database</span>            <span class="c1"># [Path(".../proteinsGPTMD.xml")]</span>
 </code></pre></div>
 <h2 id="glyco-search">Glyco search</h2>
 <div class="highlight"><pre><span></span><code><span class="n">result</span> <span class="o">=</span> <span class="n">mm</span><span class="o">.</span><span class="n">glyco_search</span><span class="p">(</span>
-    <span class="s2">&quot;myrun.mzML&quot;</span><span class="p">,</span> <span class="s2">&quot;proteins.fasta&quot;</span><span class="p">,</span> <span class="s2">&quot;out&quot;</span><span class="p">,</span>
-    <span class="n">glyco_search_type</span><span class="o">=</span><span class="s2">&quot;NGlycanSearch&quot;</span><span class="p">,</span>   <span class="c1"># or &quot;OGlycanSearch&quot;, &quot;N_O_GlycanSearch&quot;</span>
+    <span class="s2">"myrun.mzML"</span><span class="p">,</span> <span class="s2">"proteins.fasta"</span><span class="p">,</span> <span class="s2">"out"</span><span class="p">,</span>
+    <span class="n">glyco_search_type</span><span class="o">=</span><span class="s2">"NGlycanSearch"</span><span class="p">,</span>   <span class="c1"># or "OGlycanSearch", "N_O_GlycanSearch"</span>
 <span class="p">)</span>
 <span class="n">psms</span> <span class="o">=</span> <span class="n">result</span><span class="o">.</span><span class="n">glyco_search</span><span class="o">.</span><span class="n">glyco_psms</span>
 </code></pre></div>
@@ -824,9 +824,9 @@ MetaMorpheus chains the tasks <em>internally</em>: calibration's calibrated spec
 augmented database feeds search. Run them together with <code>pipeline</code>:</p>
 <div class="highlight"><pre><span></span><code><span class="n">result</span> <span class="o">=</span> <span class="n">mm</span><span class="o">.</span><span class="n">pipeline</span><span class="p">(</span>
     <span class="p">[</span><span class="n">mm</span><span class="o">.</span><span class="n">make_calibration_task</span><span class="p">(),</span> <span class="n">mm</span><span class="o">.</span><span class="n">make_gptmd_task</span><span class="p">(),</span> <span class="n">mm</span><span class="o">.</span><span class="n">make_search_task</span><span class="p">()],</span>
-    <span class="n">spectra</span><span class="o">=</span><span class="s2">&quot;myrun.mzML&quot;</span><span class="p">,</span>
-    <span class="n">database</span><span class="o">=</span><span class="s2">&quot;proteins.fasta&quot;</span><span class="p">,</span>
-    <span class="n">output_dir</span><span class="o">=</span><span class="s2">&quot;out&quot;</span><span class="p">,</span>
+    <span class="n">spectra</span><span class="o">=</span><span class="s2">"myrun.mzML"</span><span class="p">,</span>
+    <span class="n">database</span><span class="o">=</span><span class="s2">"proteins.fasta"</span><span class="p">,</span>
+    <span class="n">output_dir</span><span class="o">=</span><span class="s2">"out"</span><span class="p">,</span>
 <span class="p">)</span>
 
 <span class="k">for</span> <span class="n">task</span> <span class="ow">in</span> <span class="n">result</span><span class="o">.</span><span class="n">tasks</span><span class="p">:</span>
@@ -851,7 +851,7 @@ compose custom pipelines — e.g. a GPTMD run followed by two searches with diff
     <span class="n">mm</span><span class="o">.</span><span class="n">make_search_task</span><span class="p">(</span><span class="n">precursor_tol_ppm</span><span class="o">=</span><span class="mi">5</span><span class="p">),</span>
     <span class="n">mm</span><span class="o">.</span><span class="n">make_search_task</span><span class="p">(</span><span class="n">precursor_tol_ppm</span><span class="o">=</span><span class="mi">20</span><span class="p">),</span>
 <span class="p">]</span>
-<span class="n">mm</span><span class="o">.</span><span class="n">pipeline</span><span class="p">(</span><span class="n">tasks</span><span class="p">,</span> <span class="n">spectra</span><span class="o">=</span><span class="s2">&quot;myrun.mzML&quot;</span><span class="p">,</span> <span class="n">database</span><span class="o">=</span><span class="s2">&quot;proteins.fasta&quot;</span><span class="p">,</span> <span class="n">output_dir</span><span class="o">=</span><span class="s2">&quot;out&quot;</span><span class="p">)</span>
+<span class="n">mm</span><span class="o">.</span><span class="n">pipeline</span><span class="p">(</span><span class="n">tasks</span><span class="p">,</span> <span class="n">spectra</span><span class="o">=</span><span class="s2">"myrun.mzML"</span><span class="p">,</span> <span class="n">database</span><span class="o">=</span><span class="s2">"proteins.fasta"</span><span class="p">,</span> <span class="n">output_dir</span><span class="o">=</span><span class="s2">"out"</span><span class="p">)</span>
 </code></pre></div>
 
 
