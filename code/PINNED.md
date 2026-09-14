@@ -88,3 +88,4 @@ pure projection is routine; a changed number is a judgement call. Skim the range
 |---|---|---|---|
 | 2026-07-28 | `3b9f634e` | 25 commits after `1.1.7` | initial pin; the build every grounding fact above was read from |
 | 2026-08-31 | `99711097` | `1.1.8` | tracked automatically by `upstream-watch.yml`; see the pull request for the commits it brought in |
+| 2026-09-14 | `d233c17b` | `1.1.9` | tracked automatically by `upstream-watch.yml`; see the pull request for the commits it brought in |
