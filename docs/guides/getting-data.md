@@ -42,8 +42,8 @@ inspect the manifest first.
 
 !!! warning "PRIDE is mostly `.raw`"
     Many projects publish only vendor `.raw` files (and some list files only over Aspera, which show
-    as `downloadable = False`). pyMetaMorpheus needs `.mzML`, so prefer projects that publish `.mzML`,
-    or convert `.raw` with MSConvert.
+    as `downloadable = False`). pyMetaMorpheus reads Thermo `.raw` directly: pass
+    `accept_thermo_licence=True` to the search. Bruker `.d` needs converting to `.mzML` first.
 
 ## Protein databases from UniProt
 

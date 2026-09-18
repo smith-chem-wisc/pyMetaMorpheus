@@ -5,6 +5,15 @@ All notable changes to pyMetaMorpheus are recorded here. Format loosely follows
 
 ## [Unreleased]
 
+### Added
+- **Thermo `.raw` input**, on every verb, behind an explicit `accept_thermo_licence=True`. It passes
+  MetaMorpheus's `--acceptThermoLicence` (MetaMorpheus #2725, in the 1.1.9 pin) only when a `.raw`
+  is in the run, and records it in the new `RunResult.caveats`. Without the argument a `.raw` is
+  refused before anything starts, naming the argument. Asked for by the aging pipeline (PRIDE is
+  mostly `.raw`).
+- **`container.yml`**: a weekly check that MetaMorpheus's official Docker image, at the pinned
+  release, runs `CMD -g`, a search, and this package's live tests.
+
 ## [0.0.2.dev0]
 
 The first tag this project has ever cut, and deliberately a dev preview: its purpose is to exercise

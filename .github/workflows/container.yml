@@ -81,6 +81,10 @@ jobs:
           base="https://raw.githubusercontent.com/smith-chem-wisc/MetaMorpheus/${{ steps.tag.outputs.pin }}/MetaMorpheus/EngineLayer/Data"
           curl -fsSL -o data/SmallCalibratible_Yeast.mzML "$base/SmallCalibratible_Yeast.mzML"
           curl -fsSL -o data/SmallYeast.fasta "$base/SmallYeast.fasta"
+          # A small Thermo .raw + database for the .raw live test in step 3.
+          raw="https://raw.githubusercontent.com/smith-chem-wisc/MetaMorpheus/${{ steps.tag.outputs.pin }}/MetaMorpheus/Test/TestData/SpectralLibrarySearch"
+          curl -fsSL -o data/slicedMouse.raw "$raw/slicedMouse.raw"
+          curl -fsSL -o data/slicedMouseDatabase.fasta.gz "$raw/slicedMouseDatabase.fasta.gz"
           ls -l data
 
       - name: "1. CMD -g inside the image"
@@ -121,6 +125,7 @@ jobs:
             -v "$PWD:/repo" -v "$PWD/data:/data:ro" \
             -e PYMM_METAMORPHEUS=/MetaMorpheus/CMD.dll \
             -e PYMM_SAMPLE_DATA=/data \
+            -e PYMM_RAW_SAMPLE_DATA=/data \
             --entrypoint sh \
             "smithchemwisc/metamorpheus:${{ steps.tag.outputs.tag }}" \
             -c 'set -eo pipefail

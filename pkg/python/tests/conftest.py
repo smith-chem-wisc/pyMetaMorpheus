@@ -47,3 +47,19 @@ def sample_data():
     if not (spectra.exists() and db.exists()):
         pytest.skip(f"sample data not found under {data}")
     return {"spectra": spectra, "database": db}
+
+
+@pytest.fixture(scope="session")
+def raw_sample_data():
+    """A small Thermo .raw and its database, from MetaMorpheus's own test data."""
+    data = Path(
+        os.environ.get(
+            "PYMM_RAW_SAMPLE_DATA",
+            r"E:\GitClones\MetaMorpheus\MetaMorpheus\Test\TestData\SpectralLibrarySearch",
+        )
+    )
+    spectra = data / "slicedMouse.raw"
+    db = data / "slicedMouseDatabase.fasta.gz"
+    if not (spectra.exists() and db.exists()):
+        pytest.skip(f".raw sample data not found under {data}")
+    return {"spectra": spectra, "database": db}

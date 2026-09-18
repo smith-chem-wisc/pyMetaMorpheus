@@ -139,6 +139,9 @@ class RunResult:
     tasks: list[TaskResult] = field(default_factory=list)
     stdout: str = ""
     stderr: str = ""
+    #: What this run did that you should know about, e.g. that it agreed to Thermo's
+    #: RawFileReader licence to read a .raw. Empty for an ordinary run.
+    caveats: list[str] = field(default_factory=list)
 
     def task(self, task_type: str) -> TaskResult | None:
         """Return the (last) task of ``task_type`` (e.g. "SearchTask"), or None."""

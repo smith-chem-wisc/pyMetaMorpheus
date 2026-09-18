@@ -29,9 +29,15 @@ from ._runner import generate_default_tomls, invoke, locate_cli
 from ._toml import format_mods, patch_toml
 from .results import RunResult, discover_tasks
 
-#: Accepted spectra extensions. Restricted to mzML for now (G-settings): a .raw
-#: run hangs on the Thermo license prompt until that is set non-interactively.
-_ALLOWED_SPECTRA_SUFFIXES = {".mzml"}
+#: Accepted spectra extensions. Thermo .raw is accepted only with
+#: accept_thermo_licence=True - see _validate_spectra.
+_ALLOWED_SPECTRA_SUFFIXES = {".mzml", ".raw"}
+
+#: Disclosed on every result that read a .raw, the way pyMzLib discloses it on a read.
+THERMO_LICENCE_CAVEAT = (
+    "Thermo .raw was read through Thermo's RawFileReader. accept_thermo_licence=True agreed to its "
+    "licence terms on your behalf, and MetaMorpheus recorded that agreement in its settings.toml."
+)
 
 #: Accepted database extensions (protein sequence DBs MetaMorpheus reads).
 _ALLOWED_DB_SUFFIXES = {".fasta", ".fa", ".xml", ".gz"}
@@ -202,22 +208,45 @@ def _as_path_list(value, kind: str) -> list[Path]:
     return paths
 
 
-def _validate_spectra(spectra) -> list[Path]:
+def _validate_spectra(spectra, *, accept_thermo_licence: bool = False) -> list[Path]:
+    """Check every spectra path and return them as Paths.
+
+    Thermo ``.raw`` needs Thermo's RawFileReader licence agreed. MetaMorpheus
+    refuses to read one until someone agrees, and asks on the console, which a
+    headless run cannot answer. We pass its ``--acceptThermoLicence`` flag, but
+    only when the caller asks with ``accept_thermo_licence=True``: agreeing to a
+    vendor licence is the caller's act, not something a library should do quietly.
+    pyMzLib can accept by use because mzLib's reader has no gate; MetaMorpheus
+    put one there on purpose.
+    """
     paths = _as_path_list(spectra, "spectra file")
     for p in paths:
         # Check the format first, so an unsupported extension always reports as
         # unsupported (even for a path that also doesn't exist).
-        if p.suffix.lower() not in _ALLOWED_SPECTRA_SUFFIXES:
+        suffix = p.suffix.lower()
+        if suffix not in _ALLOWED_SPECTRA_SUFFIXES:
             raise UsageError(
                 f"Unsupported spectra format {p.suffix!r} for {p.name}. "
-                "pyMetaMorpheus currently accepts .mzML only; .raw support is "
-                "deferred until the Thermo license can be accepted "
-                "non-interactively (gap G-settings). Convert with MSConvert, or "
-                "export .mzML from your instrument software."
+                "pyMetaMorpheus accepts .mzML and Thermo .raw. Bruker .d is not "
+                "supported: MetaMorpheus reads it through Windows-only vendor "
+                "libraries. Convert with MSConvert, or export .mzML from your "
+                "instrument software."
+            )
+        if suffix == ".raw" and not accept_thermo_licence:
+            raise UsageError(
+                f"{p.name} is a Thermo .raw file. MetaMorpheus reads it through "
+                "Thermo's RawFileReader, whose licence terms must be agreed first. "
+                "Pass accept_thermo_licence=True to agree to them for this run "
+                "(MetaMorpheus prints the terms and records the agreement), or "
+                "convert to .mzML."
             )
         if not p.exists():
             raise UsageError(f"Spectra file not found: {p}")
     return paths
+
+
+def _has_raw(paths: list[Path]) -> bool:
+    return any(p.suffix.lower() == ".raw" for p in paths)
 
 
 def _validate_databases(database) -> list[Path]:
@@ -304,6 +333,7 @@ def run_tasks(
     database,
     output_dir,
     timeout: float | None = None,
+    accept_thermo_licence: bool = False,
 ) -> RunResult:
     """Generate + patch each task's TOML, run them as one MetaMorpheus invocation,
     and return a :class:`RunResult`.
@@ -313,11 +343,16 @@ def run_tasks(
     ``output_dir`` should be a fresh (or new) directory. Results are discovered by
     scanning it for ``TaskN<Type>`` folders, so a directory left over from an
     earlier run would surface stale task folders in the returned result.
+
+    ``accept_thermo_licence`` is required for ``.raw`` spectra (see
+    :func:`_validate_spectra`). The flag is only passed to MetaMorpheus when a
+    ``.raw`` is actually in the run, so an mzML run never agrees to anything.
     """
     if not tasks:
         raise UsageError("At least one task is required.")
 
-    spectra_paths = _validate_spectra(spectra)
+    spectra_paths = _validate_spectra(spectra, accept_thermo_licence=accept_thermo_licence)
+    reads_raw = _has_raw(spectra_paths)
     database_paths = _validate_databases(database)
 
     # Locate the CLI up front so a missing MetaMorpheus fails BEFORE we create the
@@ -378,12 +413,19 @@ def run_tasks(
         args += ["-s", *[str(p) for p in spectra_paths]]
         args += ["-d", *[str(p) for p in database_paths]]
         args += ["-o", str(out), "-v", "minimal"]
+        if reads_raw:
+            # Records the agreement in MetaMorpheus's settings.toml, which on Linux sits
+            # beside CMD itself. If that folder is read-only the write fails and the run
+            # reports it as a RunError.
+            args.append("--acceptThermoLicence")
 
         proc = invoke(args, timeout=timeout)
     finally:
         shutil.rmtree(staging, ignore_errors=True)
 
     result = RunResult(output_dir=out, stdout=proc.stdout, stderr=proc.stderr)
+    if reads_raw:
+        result.caveats.append(THERMO_LICENCE_CAVEAT)
     result.tasks = select_run_tasks(discover_tasks(out), tasks, pre_existing)
 
     # Fail loudly if MetaMorpheus exited 0 but produced no output folder for a
