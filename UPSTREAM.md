@@ -83,6 +83,17 @@ blocked, only its convenience wrapper is.
 | **Why it matters here** | An `experimental_design=` argument would have to copy files into the caller's input directory, which is a repair site. It waits for the flag instead. Requested by the aging pipeline. |
 | **Status** | **OPEN** — [MetaMorpheus#2838](https://github.com/smith-chem-wisc/MetaMorpheus/issues/2838). |
 
+### U7 — a gzipped database is decompressed to a fixed `temp.fasta` / `temp.xml` beside it (mzLib)
+
+| | |
+|---|---|
+| **What** | `ProteinDbLoader.LoadProteinFasta` decompresses a `.fasta.gz` to `Path.Combine(<database folder>, "temp.fasta")`, and `LoadProteinXML` decompresses a `.xml.gz` to `temp.xml` in the same place (`RnaDbLoader` does the same for FASTA). The name is fixed, and the location is the input's folder. |
+| **Native C# consumer affected?** | **Yes.** Anyone running `CMD` on a gzipped FASTA. |
+| **Two failures** | (1) A read-only database folder fails the run: `Read-only file system: '/data/temp.fasta'`. The container check hit exactly this with the data mounted `:ro`. (2) Two runs sharing a folder of gzipped FASTAs write the same `temp.fasta` concurrently, so one run can read another's decompressed file. That is the normal shape of a batch pipeline. |
+| **Possible fix** | Decompress to a unique file in the temp directory, or stream through `GZipStream` directly. |
+| **Caveat carried meanwhile** | The operator guidance: decompress databases once, up front, or give each run its own database folder. |
+| **Status** | **OPEN** — not yet filed (belongs to mzLib). Found 2026-09-18 by `container.yml`. |
+
 ## Resolved
 
 _Nothing yet._

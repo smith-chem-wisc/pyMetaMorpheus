@@ -121,8 +121,11 @@ jobs:
         # in a throwaway container and is not a recommendation for an operator's image.
         run: |
           set -euo pipefail
+          # /data is writable on purpose. mzLib decompresses a .fasta.gz database to a fixed
+          # "temp.fasta" in the database's own folder (ProteinDbLoader.cs:269), so a read-only
+          # database folder fails the run. Upstream issue: UPSTREAM.md U7.
           docker run --rm \
-            -v "$PWD:/repo" -v "$PWD/data:/data:ro" \
+            -v "$PWD:/repo" -v "$PWD/data:/data" \
             -e PYMM_METAMORPHEUS=/MetaMorpheus/CMD.dll \
             -e PYMM_SAMPLE_DATA=/data \
             -e PYMM_RAW_SAMPLE_DATA=/data \
