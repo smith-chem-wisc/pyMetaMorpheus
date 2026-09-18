@@ -1,0 +1,136 @@
+# Does MetaMorpheus's official Docker image actually run a search, and does pyMetaMorpheus work
+# inside it?
+#
+# smithchemwisc/metamorpheus is the obvious install for a server operator: pull an image, no .NET, no
+# build. It is what we point operators at (aging thread 003, D5-c). But MetaMorpheus's own
+# DockerUpload.yml only builds and pushes the image. It never runs it, so nothing anywhere would notice
+# if the image published every day and could not search. The base is Alpine (musl libc), while the
+# native libraries MetaMorpheus ships (SQLite, libtorch) are glibc builds. That is the prime suspect,
+# but it is a suspicion, and this workflow exists to replace it with an answer.
+#
+# Why a separate workflow and not a job in ci.yml: release.yml gates on ci.yml. This checks an
+# artifact upstream builds, not code in this repository, so a red result here must not block our
+# release. It is reported, not gated.
+#
+# The steps are ordered so a failure says WHERE it broke:
+#   1. `CMD -g` in the image      -> the image starts and the .NET runtime loads CMD at all
+#   2. a search with CMD directly -> MetaMorpheus can read spectra, digest and score in the image
+#   3. pyMetaMorpheus's live tests inside the image -> the operator recipe works end to end
+# A failure at 1 or 2 is MetaMorpheus's to fix upstream; a failure only at 3 is ours.
+
+name: container
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/container.yml"
+      - "code/metamorpheus.pin"
+  schedule:
+    # Mondays 08:00 UTC, an hour after upstream-watch, so a fresh pin bump is tested the same day.
+    - cron: "0 8 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  official-image:
+    name: official image at the pinned release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Find the image tag for our pin
+        id: tag
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+
+          pin=$(tr -d '[:space:]' < code/metamorpheus.pin)
+          if ! [[ "$pin" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "::error::code/metamorpheus.pin must hold a full 40-character sha; got '$pin'"
+            exit 1
+          fi
+
+          # Images are tagged by release name. Test the one built from OUR pin, not :latest, for the
+          # same reason ci.yml's live canary stopped cloning master: green on a different build says
+          # nothing about ours. The commits endpoint dereferences annotated tags (see upstream-watch).
+          tag=""
+          for t in $(gh api "repos/smith-chem-wisc/MetaMorpheus/releases?per_page=15" --jq '.[].tag_name'); do
+            if [ "$(gh api "repos/smith-chem-wisc/MetaMorpheus/commits/$t" --jq .sha)" = "$pin" ]; then
+              tag="$t"
+              break
+            fi
+          done
+          if [ -z "$tag" ]; then
+            echo "::error::No MetaMorpheus release matches the pin $pin, so there is no official image of this build to test."
+            exit 1
+          fi
+          echo "pin $pin is release $tag -> smithchemwisc/metamorpheus:$tag"
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          echo "pin=$pin" >> "$GITHUB_OUTPUT"
+
+      - name: Pull the image
+        run: docker pull "smithchemwisc/metamorpheus:${{ steps.tag.outputs.tag }}"
+
+      - name: Fetch the sample data at the pin
+        run: |
+          set -euo pipefail
+          mkdir -p data
+          base="https://raw.githubusercontent.com/smith-chem-wisc/MetaMorpheus/${{ steps.tag.outputs.pin }}/MetaMorpheus/EngineLayer/Data"
+          curl -fsSL -o data/SmallCalibratible_Yeast.mzML "$base/SmallCalibratible_Yeast.mzML"
+          curl -fsSL -o data/SmallYeast.fasta "$base/SmallYeast.fasta"
+          ls -l data
+
+      - name: "1. CMD -g inside the image"
+        run: |
+          set -euo pipefail
+          mkdir -p out/tomls
+          docker run --rm -v "$PWD/out:/out" "smithchemwisc/metamorpheus:${{ steps.tag.outputs.tag }}" \
+            -g -o /out/tomls
+          ls -l out/tomls
+          test -f out/tomls/SearchTask.toml
+
+      - name: "2. A search with CMD directly"
+        run: |
+          set -euo pipefail
+          docker run --rm -v "$PWD/data:/data:ro" -v "$PWD/out:/out" \
+            "smithchemwisc/metamorpheus:${{ steps.tag.outputs.tag }}" \
+            -t /out/tomls/SearchTask.toml \
+            -s /data/SmallCalibratible_Yeast.mzML \
+            -d /data/SmallYeast.fasta \
+            -o /out/search -v normal
+          psms=out/search/Task1SearchTask/AllPSMs.psmtsv
+          test -f "$psms"
+          rows=$(( $(wc -l < "$psms") - 1 ))
+          echo "AllPSMs.psmtsv: $rows PSM rows"
+          if [ "$rows" -lt 1 ]; then
+            echo "::error::The search ran but reported no PSMs."
+            exit 1
+          fi
+
+      - name: "3. pyMetaMorpheus live tests inside the image"
+        # The operator recipe from aging thread 003: the official image, Python on top,
+        # PYMM_METAMORPHEUS pointing at the image's CMD.dll (the runner launches it through `dotnet`).
+        # Alpine's Python is "externally managed", so pip needs --break-system-packages. That is fine
+        # in a throwaway container and is not a recommendation for an operator's image.
+        run: |
+          set -euo pipefail
+          docker run --rm \
+            -v "$PWD:/repo" -v "$PWD/data:/data:ro" \
+            -e PYMM_METAMORPHEUS=/MetaMorpheus/CMD.dll \
+            -e PYMM_SAMPLE_DATA=/data \
+            --entrypoint sh \
+            "smithchemwisc/metamorpheus:${{ steps.tag.outputs.tag }}" \
+            -c 'set -eo pipefail
+                apk add --no-cache python3 py3-pip >/dev/null
+                python3 -m pip install --quiet --break-system-packages -e "/repo/pkg/python[dev]"
+                cd /repo/pkg/python
+                python3 -m pytest -q -m live -rs 2>&1 | tee /tmp/pytest.log
+                # The live tests SKIP when they cannot find a CLI or the sample data, and a skip exits
+                # 0. Here that would be a green tick for a check that never ran, so a skip fails.
+                if grep -q "skipped" /tmp/pytest.log; then
+                  echo "::error::Live tests were skipped inside the image - the check did not run."
+                  exit 1
+                fi'
