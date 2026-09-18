@@ -18,12 +18,72 @@ def _touch(dir_, name):
     return p
 
 
-def test_raw_rejected_before_process(tmp_path):
-    # .raw is rejected on the extension, regardless of existence (mzML-only, G-settings).
+def test_raw_needs_the_licence_argument(tmp_path):
+    # Agreeing to Thermo's licence is the caller's act, so .raw is refused without it,
+    # and the refusal names the argument that fixes it.
     raw = _touch(tmp_path, "run.raw")
     with pytest.raises(mm.UsageError) as exc:
         _validate_spectra(raw)
-    assert ".raw" in str(exc.value) or "raw support is deferred" in str(exc.value)
+    assert "accept_thermo_licence=True" in str(exc.value)
+
+
+def test_raw_accepted_with_the_licence_argument(tmp_path):
+    raw = _touch(tmp_path, "run.RAW")
+    assert _validate_spectra(raw, accept_thermo_licence=True) == [raw]
+
+
+def test_bruker_d_still_rejected(tmp_path):
+    with pytest.raises(mm.UsageError) as exc:
+        _validate_spectra(tmp_path / "run.d", accept_thermo_licence=True)
+    assert "Bruker" in str(exc.value)
+
+
+def _stub_cli(monkeypatch, tmp_path):
+    """Replace the CLI with a recorder: returns the list every invoke's args land in.
+
+    Defaults come from a single SearchTask.toml, and the fake run makes the task
+    folder MetaMorpheus would, so run_tasks' "produced nothing" guard is satisfied.
+    """
+    import subprocess
+
+    from pymetamorpheus import _engine
+
+    calls: list[list[str]] = []
+
+    def fake_defaults(out_dir):
+        p = out_dir / "SearchTask.toml"
+        p.write_text('TaskType = "Search"\n', encoding="utf-8")
+        return {p.name: p}
+
+    def fake_invoke(args, timeout=None):
+        calls.append(list(args))
+        out = args[args.index("-o") + 1]
+        (tmp_path / out / "Task1SearchTask").mkdir(parents=True, exist_ok=True)
+        return subprocess.CompletedProcess(args, 0, stdout="", stderr="")
+
+    monkeypatch.setattr(_engine, "locate_cli", lambda: ["CMD"])
+    monkeypatch.setattr(_engine, "generate_default_tomls", fake_defaults)
+    monkeypatch.setattr(_engine, "invoke", fake_invoke)
+    return calls
+
+
+def test_raw_run_passes_the_flag_and_discloses_it(monkeypatch, tmp_path):
+    calls = _stub_cli(monkeypatch, tmp_path)
+    raw = _touch(tmp_path, "run.raw")
+    db = _touch(tmp_path, "proteins.fasta")
+    result = mm.search(raw, db, tmp_path / "out", accept_thermo_licence=True)
+    assert "--acceptThermoLicence" in calls[0]
+    assert any("RawFileReader" in c for c in result.caveats)
+
+
+def test_mzml_run_never_agrees_to_anything(monkeypatch, tmp_path):
+    # The argument alone must not agree to the licence: only a .raw in the run does.
+    calls = _stub_cli(monkeypatch, tmp_path)
+    mzml = _touch(tmp_path, "run.mzML")
+    db = _touch(tmp_path, "proteins.fasta")
+    result = mm.search(mzml, db, tmp_path / "out", accept_thermo_licence=True)
+    assert "--acceptThermoLicence" not in calls[0]
+    assert result.caveats == []
 
 
 def test_unsupported_extension_reported_even_if_missing():

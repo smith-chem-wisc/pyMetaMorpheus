@@ -237,13 +237,20 @@ def search(
     update_spectral_library: bool | None = None,
     params: dict | None = None,
     timeout: float | None = None,
+    accept_thermo_licence: bool = False,
 ) -> RunResult:
     """Run a classic MetaMorpheus search.
 
-    ``spectra`` is one ``.mzML`` path (or an iterable of them); ``database`` is a
-    protein ``.fasta``/``.xml``(``.gz``); ``output_dir`` is where the run
-    directory is written. Returns a :class:`RunResult` whose ``.search`` exposes
-    ``AllPSMs.psmtsv`` and friends.
+    ``spectra`` is one ``.mzML`` or Thermo ``.raw`` path (or an iterable of them);
+    ``database`` is a protein ``.fasta``/``.xml``(``.gz``); ``output_dir`` is where
+    the run directory is written. Returns a :class:`RunResult` whose ``.search``
+    exposes ``AllPSMs.psmtsv`` and friends.
+
+    Thermo ``.raw`` is read through Thermo's RawFileReader, and MetaMorpheus will
+    not read one until its licence is agreed. Pass ``accept_thermo_licence=True`` to
+    agree for this run: MetaMorpheus prints the terms, records the agreement and
+    carries on without prompting, and ``result.caveats`` says it happened. Every
+    verb takes the same argument. Bruker ``.d`` is not supported.
 
     Label-free quantification (FlashLFQ) runs as part of the search and is ON by
     default, so ``result.search.quantified_proteins`` / ``quantified_peptides`` /
@@ -277,7 +284,8 @@ def search(
         params=params,
     )
     return run_tasks(
-        [task], spectra=spectra, database=database, output_dir=output_dir, timeout=timeout
+        [task], spectra=spectra, database=database, output_dir=output_dir, timeout=timeout,
+        accept_thermo_licence=accept_thermo_licence,
     )
 
 
@@ -292,6 +300,7 @@ def calibrate(
     max_threads: int | None = None,
     params: dict | None = None,
     timeout: float | None = None,
+    accept_thermo_licence: bool = False,
 ) -> RunResult:
     """Run a calibration task, producing calibrated ``*-calib.mzML`` spectra
     (``result.calibration.calibrated_spectra``)."""
@@ -303,7 +312,8 @@ def calibrate(
         params=params,
     )
     return run_tasks(
-        [task], spectra=spectra, database=database, output_dir=output_dir, timeout=timeout
+        [task], spectra=spectra, database=database, output_dir=output_dir, timeout=timeout,
+        accept_thermo_licence=accept_thermo_licence,
     )
 
 
@@ -318,6 +328,7 @@ def gptmd(
     max_threads: int | None = None,
     params: dict | None = None,
     timeout: float | None = None,
+    accept_thermo_licence: bool = False,
 ) -> RunResult:
     """Run a GPTMD task, producing a PTM-augmented protein database
     (``result.gptmd.gptmd_database``)."""
@@ -329,7 +340,8 @@ def gptmd(
         params=params,
     )
     return run_tasks(
-        [task], spectra=spectra, database=database, output_dir=output_dir, timeout=timeout
+        [task], spectra=spectra, database=database, output_dir=output_dir, timeout=timeout,
+        accept_thermo_licence=accept_thermo_licence,
     )
 
 
@@ -345,6 +357,7 @@ def glyco_search(
     max_threads: int | None = None,
     params: dict | None = None,
     timeout: float | None = None,
+    accept_thermo_licence: bool = False,
 ) -> RunResult:
     """Run a glyco search (``result.glyco_search``)."""
     task = make_glyco_search_task(
@@ -356,7 +369,8 @@ def glyco_search(
         params=params,
     )
     return run_tasks(
-        [task], spectra=spectra, database=database, output_dir=output_dir, timeout=timeout
+        [task], spectra=spectra, database=database, output_dir=output_dir, timeout=timeout,
+        accept_thermo_licence=accept_thermo_licence,
     )
 
 
@@ -371,6 +385,7 @@ def xl_search(
     max_threads: int | None = None,
     params: dict | None = None,
     timeout: float | None = None,
+    accept_thermo_licence: bool = False,
 ) -> RunResult:
     """Run a cross-link (XL) search (``result.task("XLSearchTask")``).
 
@@ -385,7 +400,8 @@ def xl_search(
         params=params,
     )
     return run_tasks(
-        [task], spectra=spectra, database=database, output_dir=output_dir, timeout=timeout
+        [task], spectra=spectra, database=database, output_dir=output_dir, timeout=timeout,
+        accept_thermo_licence=accept_thermo_licence,
     )
 
 
@@ -396,6 +412,7 @@ def run_toml(
     output_dir,
     *,
     timeout: float | None = None,
+    accept_thermo_licence: bool = False,
 ) -> RunResult:
     """Run one or more complete, ready-made task TOMLs verbatim.
 
@@ -406,7 +423,8 @@ def run_toml(
     tomls = [toml] if isinstance(toml, (str, Path)) else list(toml)
     tasks = [task_from_toml(t) for t in tomls]
     return run_tasks(
-        tasks, spectra=spectra, database=database, output_dir=output_dir, timeout=timeout
+        tasks, spectra=spectra, database=database, output_dir=output_dir, timeout=timeout,
+        accept_thermo_licence=accept_thermo_licence,
     )
 
 
@@ -456,6 +474,7 @@ def pipeline(
     output_dir,
     *,
     timeout: float | None = None,
+    accept_thermo_licence: bool = False,
 ) -> RunResult:
     """Run several tasks as one MetaMorpheus invocation — the canonical workflow.
 
@@ -473,5 +492,6 @@ def pipeline(
     hand-off and violates BRIDGE-PARALLELISM (one process, its own threads).
     """
     return run_tasks(
-        tasks, spectra=spectra, database=database, output_dir=output_dir, timeout=timeout
+        tasks, spectra=spectra, database=database, output_dir=output_dir, timeout=timeout,
+        accept_thermo_licence=accept_thermo_licence,
     )

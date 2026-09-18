@@ -49,6 +49,51 @@ to detect it — the exact repair site `D-INHERIT` forbids. Averaging remains re
 `run_toml()` with a hand-authored config, which is the honest interim answer: the capability is not
 blocked, only its convenience wrapper is.
 
+### U3 — CMD's interactive prompts crash when there is no console
+
+| | |
+|---|---|
+| **What** | The Thermo licence prompt and the unreadable-experimental-design prompt call `Console.ReadLine().ToLowerInvariant()` unguarded. With stdin closed, `ReadLine()` returns `null` and CMD dies with a `NullReferenceException` instead of declining. |
+| **Native C# consumer affected?** | **Yes.** Any CI job, batch job, `nohup` run or container. |
+| **Caveat carried meanwhile** | None needed for the licence: `accept_thermo_licence=True` passes `--acceptThermoLicence`, so that prompt never fires. The design prompt can still fire on a malformed `ExperimentalDesign.tsv`, and surfaces as a `RunError`. |
+| **Status** | **OPEN** — [MetaMorpheus#2770](https://github.com/smith-chem-wisc/MetaMorpheus/issues/2770), with PR #2724 open. |
+
+### U4 — `MaxHeterozygousVariants` is ignored for protein XML databases
+
+| | |
+|---|---|
+| **What** | `DatabaseLoadingEngine` passes a literal `0` where `commonParameters.MaxHeterozygousVariants` used to go (introduced by #2576, which gives no reason). UniProt sequence variants in an XML database are never expanded, whatever the setting says. |
+| **Native C# consumer affected?** | **Yes.** The setting is in every task TOML and in the GUI's task windows. |
+| **Caveat carried meanwhile** | None. This package exposes the key only through `params`, and does not claim it works. |
+| **Status** | **OPEN** — [MetaMorpheus#2836](https://github.com/smith-chem-wisc/MetaMorpheus/issues/2836), asked as "deliberate or not?". |
+
+### U5 — the spectral library is written outside the task folder on Linux/macOS
+
+| | |
+|---|---|
+| **What** | `MetaMorpheusTask` builds the `.msp` path as `outputFolder + "\\SpectralLibrary_..."`. On Linux and macOS the backslash is part of the file name, so the library lands in the task folder's parent. |
+| **Why it matters here** | `TaskResult.spectral_library` globs the task folder, so on Linux it returns an empty list after `write_spectral_library=True`. |
+| **Status** | **OPEN** — [MetaMorpheus#2837](https://github.com/smith-chem-wisc/MetaMorpheus/issues/2837). |
+
+### U6 — no way to point CMD at an experimental design file
+
+| | |
+|---|---|
+| **What** | `ExperimentalDesign.tsv` is found only by name, next to the first spectra file. |
+| **Why it matters here** | An `experimental_design=` argument would have to copy files into the caller's input directory, which is a repair site. It waits for the flag instead. Requested by the aging pipeline. |
+| **Status** | **OPEN** — [MetaMorpheus#2838](https://github.com/smith-chem-wisc/MetaMorpheus/issues/2838). |
+
+### U7 — a gzipped database is decompressed to a fixed `temp.fasta` / `temp.xml` beside it (mzLib)
+
+| | |
+|---|---|
+| **What** | `ProteinDbLoader.LoadProteinFasta` decompresses a `.fasta.gz` to `Path.Combine(<database folder>, "temp.fasta")`, and `LoadProteinXML` decompresses a `.xml.gz` to `temp.xml` in the same place (`RnaDbLoader` does the same for FASTA). The name is fixed, and the location is the input's folder. |
+| **Native C# consumer affected?** | **Yes.** Anyone running `CMD` on a gzipped FASTA. |
+| **Two failures** | (1) A read-only database folder fails the run: `Read-only file system: '/data/temp.fasta'`. The container check hit exactly this with the data mounted `:ro`. (2) Two runs sharing a folder of gzipped FASTAs write the same `temp.fasta` concurrently, so one run can read another's decompressed file. That is the normal shape of a batch pipeline. |
+| **Possible fix** | Decompress to a unique file in the temp directory, or stream through `GZipStream` directly. |
+| **Caveat carried meanwhile** | The operator guidance: decompress databases once, up front, or give each run its own database folder. |
+| **Status** | **OPEN** — not yet filed (belongs to mzLib). Found 2026-09-18 by `container.yml`. |
+
 ## Resolved
 
 _Nothing yet._

@@ -27,14 +27,18 @@ print(search.all_proteins)             # .../AllQuantifiedProteinGroups.tsv
 
 | argument | meaning |
 |---|---|
-| `spectra` | one `.mzML` path, or an iterable of them |
+| `spectra` | one `.mzML` or Thermo `.raw` path, or an iterable of them |
 | `database` | a protein database: `.fasta`/`.fa`, `.xml` (UniProt), or a `.gz` of either |
 | `output_dir` | where the run directory is written (created if absent) |
 
-!!! note "mzML only, for now"
-    pyMetaMorpheus currently accepts `.mzML` input. `.raw` is rejected early, before any process is
-    spawned, because a `.raw` run hangs on the Thermo license prompt until that is accepted
-    non-interactively. Convert `.raw` with MSConvert, or export `.mzML` from your instrument.
+!!! note "Thermo `.raw` needs `accept_thermo_licence=True`"
+    MetaMorpheus reads `.raw` through Thermo's RawFileReader and will not read one until its licence
+    is agreed. `accept_thermo_licence=True` agrees for the run: MetaMorpheus prints the terms, records
+    the agreement in its `settings.toml` and carries on without prompting, and `result.caveats` says
+    so. Without it a `.raw` is refused before any process starts. Every verb takes the argument.
+
+    On Linux MetaMorpheus keeps `settings.toml` next to the CMD executable, so that folder must be
+    writable (it is in the official Docker image). Bruker `.d` is not supported.
 
 ## Parameters
 

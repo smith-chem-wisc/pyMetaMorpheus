@@ -60,9 +60,9 @@ checkout ships a tiny example under `MetaMorpheus/EngineLayer/Data/`:
 Don't have data handy? You can fetch spectra from PRIDE and a protein database from UniProt straight
 from Python with pyMzLib — see **[Getting your data](getting-data.md)**.
 
-!!! note "`.mzML` only for now"
-    pyMetaMorpheus currently accepts `.mzML`. If you have `.raw`, convert it with MSConvert or export
-    `.mzML` from your instrument software (`.raw` support is deferred — gap G-settings).
+!!! note "`.mzML` or Thermo `.raw`"
+    pyMetaMorpheus accepts `.mzML` and Thermo `.raw`. For `.raw`, pass `accept_thermo_licence=True` to agree to Thermo's RawFileReader licence for the run; without it a `.raw` is refused before anything starts.
+    Bruker `.d` is not supported; convert it with MSConvert.
 
 ## Step 4 — run your first search
 
@@ -109,7 +109,7 @@ No pandas? The [Results guide](results.md) shows the same thing with only the st
 | symptom | cause / fix |
 |---|---|
 | `MetaMorpheusNotFoundError` | `PYMM_METAMORPHEUS` isn't set or points at the wrong place. The error lists every path it tried. |
-| `UsageError: Unsupported spectra format '.raw'` | Convert to `.mzML` (see step 3). |
+| `UsageError: run.raw is a Thermo .raw file` | Pass `accept_thermo_licence=True` (see step 3). |
 | `UsageError: ... no matching key ...` | A `params` section/key is misspelled — check with `mm.available_parameters("Search")`. |
 | `RunError: MetaMorpheus exited with code …` | The engine itself failed; the message includes its stdout/stderr tail. |
 | the call seems to hang | A very large search can take a while; pass a `timeout=` (seconds) to fail fast instead of waiting. |

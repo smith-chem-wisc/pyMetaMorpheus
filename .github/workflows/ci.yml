@@ -115,4 +115,7 @@ jobs:
         env:
           # Point the sample-data fixture at the cloned MetaMorpheus data dir.
           PYMM_SAMPLE_DATA: ${{ github.workspace }}/mm/MetaMorpheus/EngineLayer/Data
+          # A small Thermo .raw + database. This is the only place a .raw is read on Linux
+          # anywhere: mzLib's CI and MetaMorpheus's tests run on Windows.
+          PYMM_RAW_SAMPLE_DATA: ${{ github.workspace }}/mm/MetaMorpheus/Test/TestData/SpectralLibrarySearch
         run: python -m pytest -q -m live

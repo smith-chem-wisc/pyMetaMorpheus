@@ -13,8 +13,9 @@ Key facts encoded here:
 * On Windows the executable is ``CMD.exe``; on a framework-dependent Linux/mac
   build it is ``dotnet CMD.dll``. Both are handled by :func:`locate_cli`.
 * Runs are fully non-interactive: stdin is closed so a stray prompt surfaces as a
-  timeout/failure rather than an infinite hang (see the Thermo ``.raw`` license
-  gotcha — sidestepped for now by accepting ``.mzML`` only, gap G-settings).
+  failure rather than an infinite hang. The one prompt we know of, the Thermo
+  ``.raw`` licence, is answered up front with ``--acceptThermoLicence`` when the
+  caller passes ``accept_thermo_licence=True`` (see ``_engine._validate_spectra``).
 """
 
 from __future__ import annotations
@@ -107,7 +108,8 @@ def invoke(args: list[str], *, timeout: float | None = None) -> subprocess.Compl
     """Run the MetaMorpheus CLI with ``args`` (the flags after the executable).
 
     Non-interactive by construction: stdin is fed EOF so any interactive prompt
-    (e.g. the Thermo ``.raw`` license y/n) errors out instead of hanging forever.
+    errors out instead of hanging forever. (MetaMorpheus's own prompts crash on EOF
+    rather than declining, upstream MetaMorpheus#2770.)
     Raises :class:`RunError` on non-zero exit.
     """
     argv = locate_cli() + list(args)
@@ -129,12 +131,7 @@ def invoke(args: list[str], *, timeout: float | None = None) -> subprocess.Compl
     except FileNotFoundError as exc:  # dotnet not on PATH, etc.
         raise MetaMorpheusNotFoundError(str(exc)) from exc
     except subprocess.TimeoutExpired as exc:
-        raise RunError(
-            f"MetaMorpheus timed out after {timeout}s. If the input was a .raw "
-            "file this is likely the Thermo license prompt (accept it in "
-            "settings.toml, or use .mzML).",
-            command=argv,
-        ) from exc
+        raise RunError(f"MetaMorpheus timed out after {timeout}s.", command=argv) from exc
 
     if proc.returncode != 0:
         raise RunError(

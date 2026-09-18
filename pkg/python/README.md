@@ -86,8 +86,8 @@ for task in result.tasks:
 
 ## Current limitations
 
-- **Input is `.mzML` only** for now. `.raw` support is deferred until the Thermo license can be
-  accepted non-interactively. Convert `.raw` with MSConvert, or export `.mzML` from your instrument.
+- **Input is `.mzML` or Thermo `.raw`.** For `.raw`, pass `accept_thermo_licence=True` to agree to Thermo's RawFileReader licence for the run; without it a `.raw` is refused before anything starts. Bruker `.d` is not
+  supported (MetaMorpheus reads it through Windows-only vendor libraries); convert it to `.mzML`.
 - The named parameters on each verb are a curated subset — the knobs reached for first. Everything
   else keeps MetaMorpheus's own defaults, and is still reachable through `mm.available_parameters()`
   and `mm.run_toml()`, so nothing is locked away.

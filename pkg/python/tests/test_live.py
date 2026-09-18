@@ -34,6 +34,24 @@ def test_classic_search_produces_psms(cli_or_skip, sample_data, tmp_path):
     assert len(rows) >= 2
 
 
+def test_raw_search_produces_psms(cli_or_skip, raw_sample_data, tmp_path):
+    # MetaMorpheus reading a Thermo .raw itself, with no console to answer its licence
+    # prompt. In CI this runs on Linux, where nothing else checks that .raw reads work.
+    result = mm.search(
+        raw_sample_data["spectra"],
+        raw_sample_data["database"],
+        tmp_path / "out",
+        accept_thermo_licence=True,
+        timeout=1800,
+    )
+    assert result.search is not None
+    psms = result.search.all_psms
+    assert psms is not None and psms.exists()
+    rows = psms.read_text(encoding="utf-8").splitlines()
+    assert len(rows) >= 2
+    assert any("RawFileReader" in c for c in result.caveats)
+
+
 def test_calibration_produces_calibrated_spectra(cli_or_skip, sample_data, tmp_path):
     result = mm.calibrate(
         sample_data["spectra"], sample_data["database"], tmp_path / "out", timeout=1800
