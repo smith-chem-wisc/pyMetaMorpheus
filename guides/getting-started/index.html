@@ -906,9 +906,9 @@ checkout ships a tiny example under <code>MetaMorpheus/EngineLayer/Data/</code>:
 <p>Don't have data handy? You can fetch spectra from PRIDE and a protein database from UniProt straight
 from Python with pyMzLib — see <strong><a href="../getting-data/">Getting your data</a></strong>.</p>
 <div class="admonition note">
-<p class="admonition-title"><code>.mzML</code> only for now</p>
-<p>pyMetaMorpheus currently accepts <code>.mzML</code>. If you have <code>.raw</code>, convert it with MSConvert or export
-<code>.mzML</code> from your instrument software (<code>.raw</code> support is deferred — gap G-settings).</p>
+<p class="admonition-title"><code>.mzML</code> or Thermo <code>.raw</code></p>
+<p>pyMetaMorpheus accepts <code>.mzML</code> and Thermo <code>.raw</code>. For <code>.raw</code>, pass <code>accept_thermo_licence=True</code> to agree to Thermo's RawFileReader licence for the run; without it a <code>.raw</code> is refused before anything starts.
+Bruker <code>.d</code> is not supported; convert it with MSConvert.</p>
 </div>
 <h2 id="step-4-run-your-first-search">Step 4 — run your first search</h2>
 <div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">pymetamorpheus</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">mm</span>
@@ -956,8 +956,8 @@ from Python with pyMzLib — see <strong><a href="../getting-data/">Getting your
 <td><code>PYMM_METAMORPHEUS</code> isn't set or points at the wrong place. The error lists every path it tried.</td>
 </tr>
 <tr>
-<td><code>UsageError: Unsupported spectra format '.raw'</code></td>
-<td>Convert to <code>.mzML</code> (see step 3).</td>
+<td><code>UsageError: run.raw is a Thermo .raw file</code></td>
+<td>Pass <code>accept_thermo_licence=True</code> (see step 3).</td>
 </tr>
 <tr>
 <td><code>UsageError: ... no matching key ...</code></td>

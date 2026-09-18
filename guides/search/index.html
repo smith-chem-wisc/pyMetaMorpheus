@@ -861,7 +861,7 @@ in, a run directory out.</p>
 <tbody>
 <tr>
 <td><code>spectra</code></td>
-<td>one <code>.mzML</code> path, or an iterable of them</td>
+<td>one <code>.mzML</code> or Thermo <code>.raw</code> path, or an iterable of them</td>
 </tr>
 <tr>
 <td><code>database</code></td>
@@ -874,10 +874,13 @@ in, a run directory out.</p>
 </tbody>
 </table>
 <div class="admonition note">
-<p class="admonition-title">mzML only, for now</p>
-<p>pyMetaMorpheus currently accepts <code>.mzML</code> input. <code>.raw</code> is rejected early, before any process is
-spawned, because a <code>.raw</code> run hangs on the Thermo license prompt until that is accepted
-non-interactively. Convert <code>.raw</code> with MSConvert, or export <code>.mzML</code> from your instrument.</p>
+<p class="admonition-title">Thermo <code>.raw</code> needs <code>accept_thermo_licence=True</code></p>
+<p>MetaMorpheus reads <code>.raw</code> through Thermo's RawFileReader and will not read one until its licence
+is agreed. <code>accept_thermo_licence=True</code> agrees for the run: MetaMorpheus prints the terms, records
+the agreement in its <code>settings.toml</code> and carries on without prompting, and <code>result.caveats</code> says
+so. Without it a <code>.raw</code> is refused before any process starts. Every verb takes the argument.</p>
+<p>On Linux MetaMorpheus keeps <code>settings.toml</code> next to the CMD executable, so that folder must be
+writable (it is in the official Docker image). Bruker <code>.d</code> is not supported.</p>
 </div>
 <h2 id="parameters">Parameters</h2>
 <p>Every parameter is optional; anything you leave out keeps MetaMorpheus's own default (from

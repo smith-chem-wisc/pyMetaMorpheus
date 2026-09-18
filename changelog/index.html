@@ -636,6 +636,23 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="[Unreleased]">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#added" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Added
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -690,7 +707,7 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#added" class="md-nav__link">
+  <a href="#added_1" class="md-nav__link">
     <span class="md-ellipsis">
       
         Added
@@ -781,6 +798,23 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="[Unreleased]">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#added" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Added
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -835,7 +869,7 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#added" class="md-nav__link">
+  <a href="#added_1" class="md-nav__link">
     <span class="md-ellipsis">
       
         Added
@@ -907,6 +941,16 @@
 <p>All notable changes to pyMetaMorpheus are recorded here. Format loosely follows
 <a href="https://keepachangelog.com/">Keep a Changelog</a>; versions follow semver.</p>
 <h2 id="unreleased">[Unreleased]</h2>
+<h3 id="added">Added</h3>
+<ul>
+<li><strong>Thermo <code>.raw</code> input</strong>, on every verb, behind an explicit <code>accept_thermo_licence=True</code>. It passes
+  MetaMorpheus's <code>--acceptThermoLicence</code> (MetaMorpheus #2725, in the 1.1.9 pin) only when a <code>.raw</code>
+  is in the run, and records it in the new <code>RunResult.caveats</code>. Without the argument a <code>.raw</code> is
+  refused before anything starts, naming the argument. Asked for by the aging pipeline (PRIDE is
+  mostly <code>.raw</code>).</li>
+<li><strong><code>container.yml</code></strong>: a weekly check that MetaMorpheus's official Docker image, at the pinned
+  release, runs <code>CMD -g</code>, a search, and this package's live tests.</li>
+</ul>
 <h2 id="002dev0">[0.0.2.dev0]</h2>
 <p>The first tag this project has ever cut, and deliberately a dev preview: its purpose is to exercise
 the release path end to end rather than to ship anything. <code>PYPI_PUBLISH</code> is unset, so it builds,
@@ -939,7 +983,7 @@ tests and attaches a wheel to a GitHub prerelease and touches no public index.</
   announcing that it was.</li>
 </ul>
 <h2 id="001">[0.0.1]</h2>
-<h3 id="added">Added</h3>
+<h3 id="added_1">Added</h3>
 <ul>
 <li><strong>Classic search vignette</strong> — <code>search(spectra, database, output_dir, ...)</code> runs a MetaMorpheus
   classic search and returns a typed <code>RunResult</code> (<code>result.search.all_psms</code>, etc.).</li>

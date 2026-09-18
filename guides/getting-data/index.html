@@ -787,8 +787,8 @@ inspect the manifest first.</p>
 <div class="admonition warning">
 <p class="admonition-title">PRIDE is mostly <code>.raw</code></p>
 <p>Many projects publish only vendor <code>.raw</code> files (and some list files only over Aspera, which show
-as <code>downloadable = False</code>). pyMetaMorpheus needs <code>.mzML</code>, so prefer projects that publish <code>.mzML</code>,
-or convert <code>.raw</code> with MSConvert.</p>
+as <code>downloadable = False</code>). pyMetaMorpheus reads Thermo <code>.raw</code> directly: pass
+<code>accept_thermo_licence=True</code> to the search. Bruker <code>.d</code> needs converting to <code>.mzML</code> first.</p>
 </div>
 <h2 id="protein-databases-from-uniprot">Protein databases from UniProt</h2>
 <p>For a <strong>search database</strong> (a whole proteome), download it straight from UniProt's REST API. The
