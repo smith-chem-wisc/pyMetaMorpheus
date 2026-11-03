@@ -92,7 +92,17 @@ blocked, only its convenience wrapper is.
 | **Two failures** | (1) A read-only database folder fails the run: `Read-only file system: '/data/temp.fasta'`. The container check hit exactly this with the data mounted `:ro`. (2) Two runs sharing a folder of gzipped FASTAs write the same `temp.fasta` concurrently, so one run can read another's decompressed file. That is the normal shape of a batch pipeline. |
 | **Possible fix** | Decompress to a unique file in the temp directory, or stream through `GZipStream` directly. |
 | **Caveat carried meanwhile** | The operator guidance: decompress databases once, up front, or give each run its own database folder. |
-| **Status** | **OPEN** — not yet filed (belongs to mzLib). Found 2026-09-18 by `container.yml`. |
+| **Status** | **OPEN** — [mzLib#1323](https://github.com/smith-chem-wisc/mzLib/issues/1323). Found 2026-09-18 by `container.yml`. The loaders also delete the temp file when done, so a concurrent run can find it gone. |
+
+### U8 — `--mmsettings` on an existing empty folder crashes CMD
+
+| | |
+|---|---|
+| **What** | `GlobalVariables.SetUpDataDirectory` seeds the `--mmsettings` folder only when it does **not** exist, but uses it either way. An existing empty folder, which is what a mounted volume or a scheduler-created directory usually is, becomes the data folder with no data in it, and CMD dies with an unhandled `DirectoryNotFoundException` (`Data/Crosslinkers.tsv`). |
+| **How it surfaced** | The aging pipeline's first end-to-end run on 1.1.9 (aging thread 008). |
+| **Why it matters here** | Not directly. This package never passes `--mmsettings`, and `accept_thermo_licence=True` records the agreement in MetaMorpheus's own folder. It matters to anyone driving CMD directly on a server. |
+| **Caveat carried meanwhile** | None in code. We will not seed the folder ourselves, because that would copy MetaMorpheus's application layout into the binding. The operator guidance is to point `--mmsettings` at a path that does not exist yet. |
+| **Status** | **OPEN** — [MetaMorpheus#2839](https://github.com/smith-chem-wisc/MetaMorpheus/issues/2839). |
 
 ## Resolved
 
