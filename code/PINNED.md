@@ -90,3 +90,4 @@ pure projection is routine; a changed number is a judgement call. Skim the range
 | 2026-08-31 | `99711097` | `1.1.8` | tracked automatically by `upstream-watch.yml`; see the pull request for the commits it brought in |
 | 2026-09-14 | `d233c17b` | `1.1.9` | tracked automatically by `upstream-watch.yml`; see the pull request for the commits it brought in |
 | 2026-10-05 | `1760f4ee` | `1.1.11` | tracked automatically by `upstream-watch.yml`; see the pull request for the commits it brought in |
+| 2026-11-09 | `11313d07` | `1.1.14` | tracked automatically by `upstream-watch.yml`; see the pull request for the commits it brought in |
